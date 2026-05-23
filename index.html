@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Border Rank Wars Simulator - World Trigger</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@500;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Background grid decoration -->
+    <div class="cyber-grid-overlay"></div>
+
+    <!-- MAIN MENU / LOBBY SCREEN -->
+    <div id="lobby-screen" class="screen active">
+        <header class="lobby-header animate-glow">
+            <div class="logo-area">
+                <div class="border-emblem"></div>
+                <h1>BORDER RANK WARS</h1>
+                <p class="subtitle">TACTICAL combat SIMULATOR v2.4</p>
+            </div>
+        </header>
+
+        <main class="lobby-layout">
+            <!-- AGENT SELECTOR -->
+            <section class="panel agent-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">👤</span> SELECT AGENT</h2>
+                </div>
+                <div class="agent-grid">
+                    <button class="agent-card active" data-agent="yuma">
+                        <div class="agent-avatar yuma"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Yuma Kuga</span>
+                            <span class="agent-class">Attacker / Black Trigger User</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="osamu">
+                        <div class="agent-avatar osamu"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Osamu Mikumo</span>
+                            <span class="agent-class">Shooter / Tamakoma Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="chika">
+                        <div class="agent-avatar chika"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Chika Amatori</span>
+                            <span class="agent-class">Sniper / Trion Monster</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="hyuse">
+                        <div class="agent-avatar hyuse"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Hyuse</span>
+                            <span class="agent-class">All-Rounder / Lampyran User</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="custom">
+                        <div class="agent-avatar custom"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Custom Agent</span>
+                            <span class="agent-class">Build Your Own Setup</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- AGENT STATS -->
+                <div class="stats-container card-blur">
+                    <h3>AGENT CAPABILITY COEFFICIENT</h3>
+                    <div class="agent-stats-main">
+                        <div class="agent-portrait-wrapper">
+                            <div id="agent-stats-portrait" class="agent-portrait yuma animate-glow"></div>
+                        </div>
+                        <div class="agent-stats-bars">
+                            <div class="stat-row">
+                                <span class="stat-label">TRION LEVEL</span>
+                                <div class="stat-bar-bg">
+                                    <div id="stat-trion" class="stat-bar-fill" style="width: 80%"></div>
+                                </div>
+                                <span id="stat-trion-val" class="stat-value">8</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">ATTACK power</span>
+                                <div class="stat-bar-bg">
+                                    <div id="stat-attack" class="stat-bar-fill" style="width: 90%"></div>
+                                </div>
+                                <span id="stat-attack-val" class="stat-value">9</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">DEFENSE/SUPPORT</span>
+                                <div class="stat-bar-bg">
+                                    <div id="stat-defense" class="stat-bar-fill" style="width: 70%"></div>
+                                </div>
+                                <span id="stat-defense-val" class="stat-value">7</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">MOBILITY</span>
+                                <div class="stat-bar-bg">
+                                    <div id="stat-mobility" class="stat-bar-fill" style="width: 90%"></div>
+                                </div>
+                                <span id="stat-mobility-val" class="stat-value">9</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p id="agent-description" class="agent-bio">
+                        Neighbor with exceptional combat reflexes. Equips Scorpion for versatile close-range combat,
+                        complemented by Grasshopper maneuvers.
+                    </p>
+                </div>
+            </section>
+
+            <!-- BRIEFCASE BUILDER -->
+            <section class="panel briefcase-panel">
+                <div class="panel-header">
+                    <h2><span class="icon">💼</span> TRIGGER BRIEFCASE</h2>
+                    <button id="reset-briefcase" class="btn btn-secondary btn-sm">Load Default</button>
+                </div>
+
+                <div class="briefcase-grid">
+                    <!-- MAIN SYSTEM (Left Hand) -->
+                    <div class="briefcase-column main-hand">
+                        <h3>MAIN SYSTEM (Left Hand)</h3>
+                        <div class="slots-container">
+                            <div class="slot-item" data-slot="main1" data-key="1">
+                                <span class="key-badge">1</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Scorpion</span>
+                                    <span class="trigger-type">Attacker</span>
+                                </div>
+                            </div>
+                            <div class="slot-item" data-slot="main2" data-key="2">
+                                <span class="key-badge">2</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Grasshopper</span>
+                                    <span class="trigger-type">Support</span>
+                                </div>
+                            </div>
+                            <div class="slot-item" data-slot="main3" data-key="3">
+                                <span class="key-badge">3</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Shield</span>
+                                    <span class="trigger-type">Defense</span>
+                                </div>
+                            </div>
+                            <div class="slot-item" data-slot="main4" data-key="4">
+                                <span class="key-badge">4</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Bagworm</span>
+                                    <span class="trigger-type">Option</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SUB SYSTEM (Right Hand) -->
+                    <div class="briefcase-column sub-hand">
+                        <h3>SUB SYSTEM (Right Hand)</h3>
+                        <div class="slots-container">
+                            <div class="slot-item" data-slot="sub1" data-key="Q">
+                                <span class="key-badge">Q</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Scorpion</span>
+                                    <span class="trigger-type">Attacker</span>
+                                </div>
+                            </div>
+                            <div class="slot-item" data-slot="sub2" data-key="E">
+                                <span class="key-badge">E</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Shield</span>
+                                    <span class="trigger-type">Defense</span>
+                                </div>
+                            </div>
+                            <div class="slot-item" data-slot="sub3" data-key="R">
+                                <span class="key-badge">R</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Empty</span>
+                                    <span class="trigger-type">None</span>
+                                </div>
+                            </div>
+                            <div class="slot-item" data-slot="sub4" data-key="F">
+                                <span class="key-badge">F</span>
+                                <div class="slot-content">
+                                    <span class="trigger-name">Empty</span>
+                                    <span class="trigger-type">None</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BATTLE PARAMETERS -->
+                <div class="battle-parameters card-blur">
+                    <h3>BATTLE SETTINGS</h3>
+                    <div class="params-row">
+                        <div class="param-group">
+                            <label for="map-select">Arena Map</label>
+                            <select id="map-select" class="cyber-input">
+                                <option value="cityscape">Cityscape (1200x900)</option>
+                                <option value="cybergrid">Cyber Grid Plain (1200x900)</option>
+                                <option value="forest_mountain">Forest & Mountain (1500x1000)</option>
+                                <option value="training_room">Border Training Room (1600x1200)</option>
+                                <option value="cityscape_large">Cityscape Large (1800x1200)</option>
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label for="difficulty-select">Simulation Difficulty</label>
+                            <select id="difficulty-select" class="cyber-input">
+                                <option value="easy">Easy (Slower, Lower Damage)</option>
+                                <option value="medium" selected>Medium (Standard Mode)</option>
+                                <option value="hard">Hard (Ultra Fast, Lethal)</option>
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label for="trion-boost-select">Trion Capacity Boost</label>
+                            <select id="trion-boost-select" class="cyber-input">
+                                <option value="1">100% (Standard Trion)</option>
+                                <option value="2" selected>200% (Double Trion)</option>
+                                <option value="3">300% (Triple Trion)</option>
+                                <option value="5">500% (Trion Monster Mode)</option>
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label for="hp-boost-select">Trion Body HP Boost</label>
+                            <select id="hp-boost-select" class="cyber-input">
+                                <option value="0.5">50% (Glass Cannon Mode)</option>
+                                <option value="1" selected>100% (Standard HP)</option>
+                                <option value="2">200% (Double HP - Long Battle)</option>
+                                <option value="3">300% (Triple HP - Marathon)</option>
+                                <option value="5">500% (Titanium Body Mode)</option>
+                            </select>
+                        </div>
+                        <div class="param-group select-rivals-group">
+                            <label>Deploy Rivals</label>
+                            <div class="rival-checkboxes-container">
+                                <label class="rival-checkbox active">
+                                    <input type="checkbox" id="rival-yuma" value="yuma" checked>
+                                    <span>Yuma</span>
+                                </label>
+                                <label class="rival-checkbox active">
+                                    <input type="checkbox" id="rival-osamu" value="osamu" checked>
+                                    <span>Osamu</span>
+                                </label>
+                                <label class="rival-checkbox active">
+                                    <input type="checkbox" id="rival-chika" value="chika" checked>
+                                    <span>Chika</span>
+                                </label>
+                                <label class="rival-checkbox active">
+                                    <input type="checkbox" id="rival-hyuse" value="hyuse" checked>
+                                    <span>Hyuse</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <button id="start-battle-btn" class="btn btn-primary btn-lg animate-pulse">DEPLOY TO FIELD</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- TRIGGER SELECTOR DIALOG (MODAL) -->
+    <div id="trigger-dialog" class="modal-overlay">
+        <div class="modal-content card-blur animate-popup">
+            <header class="modal-header">
+                <h3>Select Trigger for Slot <span id="target-slot-id">MAIN 1</span></h3>
+                <button id="close-modal-btn" class="close-btn">&times;</button>
+            </header>
+            <div class="trigger-selector-tabs">
+                <button class="tab-btn active" data-category="attacker">Attacker</button>
+                <button class="tab-btn" data-category="shooter">Shooter</button>
+                <button class="tab-btn" data-category="sniper">Sniper/Gunner</button>
+                <button class="tab-btn" data-category="support">Defense/Support</button>
+            </div>
+            <div class="trigger-list-container scrollable">
+                <!-- Will be dynamically populated by Javascript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- GAMEPLAY ARENA SCREEN -->
+    <div id="game-screen" class="screen">
+        <!-- TOP HUD PANEL -->
+        <header class="game-hud card-blur">
+            <div class="hud-left">
+                <button id="menu-btn" class="btn btn-secondary btn-sm">BAIL OUT (ESC)</button>
+                <div class="hud-stat-box">
+                    <span class="label">MAP:</span>
+                    <span id="hud-map-name" class="val">Cityscape</span>
+                </div>
+            </div>
+
+            <!-- CENTRAL DUAL TRION BAR -->
+            <div class="hud-center">
+                <div class="trion-meter-group" style="display: flex; flex-direction: row; gap: 15px; width: 100%; max-width: 600px; justify-content: center;">
+                    <!-- Body HP Meter -->
+                    <div class="trion-meter" style="flex: 1;">
+                        <span class="trion-label animate-glow" style="color: var(--border-cyan); text-shadow: 0 0 5px rgba(0, 240, 255, 0.4);">TRION BODY HP</span>
+                        <div class="trion-bar-container" style="border-color: var(--border-cyan); box-shadow: 0 0 6px rgba(0, 240, 255, 0.2);">
+                            <div id="player-hp-bar" class="trion-bar-fill" style="background: linear-gradient(90deg, #005a70, #00f0ff); box-shadow: 0 0 10px var(--border-cyan); width: 100%;"></div>
+                            <span id="player-hp-val-hud" class="trion-numeric">100 / 100</span>
+                        </div>
+                    </div>
+                    <!-- Trion Ammo Meter -->
+                    <div class="trion-meter" style="flex: 1;">
+                        <span class="trion-label animate-glow">TRIGGER ENERGY POOL</span>
+                        <div class="trion-bar-container">
+                            <div id="player-trion-bar" class="trion-bar-fill" style="width: 100%;"></div>
+                            <span id="player-trion-val-hud" class="trion-numeric">100 / 100</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hud-right">
+                <div class="hud-stat-box">
+                    <span class="label">TIMER:</span>
+                    <span id="game-timer" class="val">02:30</span>
+                </div>
+                <div class="hud-stat-box highlight">
+                    <span class="label">YOUR POINTS:</span>
+                    <span id="player-score" class="val">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- GAMEPLAY CORE CONTAINER -->
+        <div class="arena-container">
+            <!-- CANVAS ARENA -->
+            <canvas id="game-canvas" width="900" height="600"></canvas>
+
+            <!-- SIDEBAR DETAILS (RADAR & LEADERBOARD) -->
+            <aside class="sidebar-panels">
+                <!-- RADAR PANEL -->
+                <div class="panel radar-panel card-blur">
+                    <div class="panel-header-compact">TACTICAL RADAR</div>
+                    <div class="radar-container">
+                        <canvas id="radar-canvas" width="200" height="200"></canvas>
+                        <div class="radar-sweep"></div>
+                    </div>
+                </div>
+
+                <!-- LEADERBOARD PANEL -->
+                <div class="panel score-panel card-blur">
+                    <div class="panel-header-compact">SCORE BOARD</div>
+                    <div id="score-list" class="score-list">
+                        <!-- Populated dynamically -->
+                        <div class="score-row active">
+                            <span class="rank">1</span>
+                            <span class="name">Yuma Kuga</span>
+                            <span class="score">0 Pts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOG FEED -->
+                <div class="panel logs-panel card-blur">
+                    <div class="panel-header-compact">COMMUNICATION FEED</div>
+                    <div id="game-logs" class="logs-container scrollable">
+                        <div class="log-message system">[SYSTEM] Combatants deploying...</div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- FOOTER HUD: BRIEFCASE STATUS -->
+        <footer class="game-footer-hud card-blur">
+            <div class="hud-column">
+                <div class="section-title">MAIN (LEFT CLICK)</div>
+                <div id="hud-main-slots" class="hud-slots-row">
+                    <!-- Key cards -->
+                    <div class="hud-slot-card active" data-key="1">
+                        <span class="key">1</span>
+                        <span class="name">Scorpion</span>
+                    </div>
+                    <div class="hud-slot-card" data-key="2">
+                        <span class="key">2</span>
+                        <span class="name">Grasshopper</span>
+                    </div>
+                    <div class="hud-slot-card" data-key="3">
+                        <span class="key">3</span>
+                        <span class="name">Shield</span>
+                    </div>
+                    <div class="hud-slot-card" data-key="4">
+                        <span class="key">4</span>
+                        <span class="name">Bagworm</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMBINED HYBRID PANEL -->
+            <div class="hud-column center-hybrid">
+                <div class="composite-bullet-indicator" id="composite-indicator">
+                    <span class="combo-key">SPACEBAR</span>
+                    <span class="combo-label">COMPOSITE FUSION</span>
+                    <span id="composite-desc" class="combo-desc">Asteroid + Hound = Gimlet</span>
+                </div>
+                <div class="lead-bullet-indicator" id="lead-indicator">
+                    <span class="combo-key">SHIFT</span>
+                    <span class="combo-label">LEAD BULLET</span>
+                    <span id="lead-desc" class="combo-desc">Infuses black weighted mass</span>
+                </div>
+            </div>
+
+            <div class="hud-column">
+                <div class="section-title">SUB (RIGHT CLICK)</div>
+                <div id="hud-sub-slots" class="hud-slots-row">
+                    <div class="hud-slot-card active" data-key="Q">
+                        <span class="key">Q</span>
+                        <span class="name">Scorpion</span>
+                    </div>
+                    <div class="hud-slot-card" data-key="E">
+                        <span class="key">E</span>
+                        <span class="name">Shield</span>
+                    </div>
+                    <div class="hud-slot-card" data-key="R">
+                        <span class="key">R</span>
+                        <span class="name">Empty</span>
+                    </div>
+                    <div class="hud-slot-card" data-key="F">
+                        <span class="key">F</span>
+                        <span class="name">Empty</span>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- BAIL OUT / GAME OVER OVERLAY -->
+    <div id="bailout-screen" class="overlay-screen">
+        <div id="bailout-container" class="bailout-box animate-popup card-blur">
+            <h2 id="bailout-title" class="alert-title animate-glow">TRION DEPLETED</h2>
+            <div id="bailout-flasher" class="warning-flasher">EMERGENCY BAIL OUT INITIATED</div>
+            <div id="final-scoreboard-list" class="bailout-details">
+                <!-- Will be dynamically populated by Javascript -->
+            </div>
+            <div class="modal-actions">
+                <button id="retry-btn" class="btn btn-primary animate-pulse">REDEPLOY IN SIMULATION</button>
+                <button id="return-lobby-btn" class="btn btn-secondary">RETURN TO BORDER HQ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAUSE / INSTRUCTIONS MENU -->
+    <div id="pause-screen" class="overlay-screen">
+        <div class="pause-box card-blur">
+            <h2>SIMULATION PAUSED</h2>
+            <div class="instruction-grid">
+                <div class="instr-col">
+                    <h3>MOVEMENT & AIM</h3>
+                    <ul>
+                        <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> - Move Character</li>
+                        <li><kbd>Mouse Cursor</kbd> - Face Direction / Aim</li>
+                        <li><kbd>Scroll Wheel</kbd> - Resize Shield (Small/Focus &harr; 360°/Shell)</li>
+                    </ul>
+                </div>
+                <div class="instr-col">
+                    <h3>MAIN HAND (Left Hand)</h3>
+                    <ul>
+                        <li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> - Select Main Trigger</li>
+                        <li><kbd>Left Mouse Click</kbd> - Use Active Main Trigger</li>
+                    </ul>
+                    <h3>SUB HAND (Right Hand)</h3>
+                    <ul>
+                        <li><kbd>Q</kbd> <kbd>E</kbd> <kbd>R</kbd> <kbd>F</kbd> - Select Sub Trigger</li>
+                        <li><kbd>Right Mouse Click</kbd> - Use Active Sub Trigger</li>
+                    </ul>
+                </div>
+                <div class="instr-col">
+                    <h3>COMBOS & OPTIONS</h3>
+                    <ul>
+                        <li><kbd>Spacebar</kbd> - Composite Bullet Fusion (If matching Shooter in Main & Sub)</li>
+                        <li><kbd>Hold Shift</kbd> - Load Lead Bullet (Only if Lead Bullet is equipped in opposite hand)
+                        </li>
+                        <li><kbd>ESC</kbd> - Pause Simulation / Quit</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="resume-btn" class="btn btn-primary">RESUME TRAINING</button>
+                <button id="pause-quit-btn" class="btn btn-secondary">BAIL OUT (EXIT)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS -->
+    <script src="audio.js"></script>
+    <script src="arena.js"></script>
+    <script src="triggers.js"></script>
+    <script src="ai.js"></script>
+    <script src="game.js"></script>
+</body>
+
+</html>

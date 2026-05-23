@@ -1,0 +1,19 @@
+{
+  "name": "world-trigger-rank-wars",
+  "version": "1.0.0",
+  "description": "Tactical 2D Top-Down World Trigger Rank Wars Combat Simulator",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx -y serve .",
+    "start": "npx -y serve ."
+  },
+  "keywords": [
+    "world-trigger",
+    "rank-wars",
+    "game",
+    "canvas",
+    "cyberpunk"
+  ],
+  "author": "Antigravity Pair-Programmer",
+  "license": "MIT"
+}
