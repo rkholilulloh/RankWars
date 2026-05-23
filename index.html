@@ -63,6 +63,83 @@
                             <span class="agent-class">All-Rounder / Lampyran User</span>
                         </div>
                     </button>
+                    <button class="agent-card" data-agent="arafune">
+                        <div class="agent-avatar arafune"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Tetsuji Arafune</span>
+                            <span class="agent-class">Sniper / All-Rounder Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="kakizaki">
+                        <div class="agent-avatar kakizaki"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Kuniharu Kakizaki</span>
+                            <span class="agent-class">Gunner / Kakizaki Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="murakami">
+                        <div class="agent-avatar murakami"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Ko Murakami</span>
+                            <span class="agent-class">Attacker / Suzunari Ace</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="azuma">
+                        <div class="agent-avatar azuma"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Haruaki Azuma</span>
+                            <span class="agent-class">Sniper / Azuma Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="ikoma">
+                        <div class="agent-avatar ikoma"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Tatsuhito Ikoma</span>
+                            <span class="agent-class">Attacker / Ikoma Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="katori">
+                        <div class="agent-avatar katori"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Yoko Katori</span>
+                            <span class="agent-class">All-Rounder / Katori Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="nasu">
+                        <div class="agent-avatar nasu"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Rei Nasu</span>
+                            <span class="agent-class">Shooter / Nasu Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="suwa">
+                        <div class="agent-avatar suwa"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Kotaro Suwa</span>
+                            <span class="agent-class">Gunner / Suwa Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="kageura">
+                        <div class="agent-avatar kageura"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Kotaro Kageura</span>
+                            <span class="agent-class">Attacker / Kageura Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="ninomiya">
+                        <div class="agent-avatar ninomiya"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Masataka Ninomiya</span>
+                            <span class="agent-class">Shooter / Ninomiya Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="yuba">
+                        <div class="agent-avatar yuba"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Takuma Yuba</span>
+                            <span class="agent-class">Gunner / Yuba Captain</span>
+                        </div>
+                    </button>
                     <button class="agent-card" data-agent="custom">
                         <div class="agent-avatar custom"></div>
                         <div class="agent-info">
@@ -203,11 +280,24 @@
                         <div class="param-group">
                             <label for="map-select">Arena Map</label>
                             <select id="map-select" class="cyber-input">
-                                <option value="cityscape">Cityscape (1200x900)</option>
-                                <option value="cybergrid">Cyber Grid Plain (1200x900)</option>
-                                <option value="forest_mountain">Forest & Mountain (1500x1000)</option>
-                                <option value="training_room">Border Training Room (1600x1200)</option>
-                                <option value="cityscape_large">Cityscape Large (1800x1200)</option>
+                                <!-- Small Arena Maps (~1000px) -->
+                                <option value="cityscape_small">Cityscape - Small (1200x1000)</option>
+                                <option value="cybergrid_small">Cyber Grid Plain - Small (1200x1000)</option>
+                                <option value="forest_small">Forest & Mountain - Small (1200x1000)</option>
+                                <option value="training_small" selected>Border Training Room - Small (1200x1000)
+                                </option>
+
+                                <!-- Medium Arena Maps (~2000px) -->
+                                <option value="cityscape_medium">Cityscape - Medium (2000x1800)</option>
+                                <option value="cybergrid_medium">Cyber Grid Plain - Medium (2000x1800)</option>
+                                <option value="forest_medium">Forest & Mountain - Medium (2000x1800)</option>
+                                <option value="training_medium">Border Training Room - Medium (2000x1800)</option>
+
+                                <!-- Large Arena Maps (~3000px) -->
+                                <option value="cityscape_large">Cityscape Large - Large (3800x3200)</option>
+                                <option value="cybergrid_large">Cyber Grid Plain - Large (3200x2900)</option>
+                                <option value="forest_large">Forest & Mountain - Large (3500x3000)</option>
+                                <option value="training_large">Border Training Room - Large (3600x3200)</option>
                             </select>
                         </div>
                         <div class="param-group">
@@ -221,10 +311,10 @@
                         <div class="param-group">
                             <label for="trion-boost-select">Trion Capacity Boost</label>
                             <select id="trion-boost-select" class="cyber-input">
-                                <option value="1">100% (Standard Trion)</option>
-                                <option value="2" selected>200% (Double Trion)</option>
-                                <option value="3">300% (Triple Trion)</option>
-                                <option value="5">500% (Trion Monster Mode)</option>
+                                <option value="10">100% (Standard Trion)</option>
+                                <option value="20" selected>200% (Double Trion)</option>
+                                <option value="30">300% (Triple Trion)</option>
+                                <option value="50">500% (Trion Monster Mode)</option>
                             </select>
                         </div>
                         <div class="param-group">
@@ -235,6 +325,16 @@
                                 <option value="2">200% (Double HP - Long Battle)</option>
                                 <option value="3">300% (Triple HP - Marathon)</option>
                                 <option value="5">500% (Titanium Body Mode)</option>
+                            </select>
+                        </div>
+                        <div class="param-group">
+                            <label for="extra-rivals-select">Extra B-Rank Agents</label>
+                            <select id="extra-rivals-select" class="cyber-input">
+                                <option value="0" selected>None (Rivals Only)</option>
+                                <option value="2">2 Extra Agents</option>
+                                <option value="4">4 Extra Agents</option>
+                                <option value="6">6 Extra Agents</option>
+                                <option value="8">8 Extra Agents</option>
                             </select>
                         </div>
                         <div class="param-group select-rivals-group">
@@ -255,6 +355,50 @@
                                 <label class="rival-checkbox active">
                                     <input type="checkbox" id="rival-hyuse" value="hyuse" checked>
                                     <span>Hyuse</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-arafune" value="arafune">
+                                    <span>Arafune</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-kakizaki" value="kakizaki">
+                                    <span>Kakizaki</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-murakami" value="murakami">
+                                    <span>Murakami</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-azuma" value="azuma">
+                                    <span>Azuma</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-ikoma" value="ikoma">
+                                    <span>Ikoma</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-katori" value="katori">
+                                    <span>Katori</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-nasu" value="nasu">
+                                    <span>Nasu</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-suwa" value="suwa">
+                                    <span>Suwa</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-kageura" value="kageura">
+                                    <span>Kageura</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-ninomiya" value="ninomiya">
+                                    <span>Ninomiya</span>
+                                </label>
+                                <label class="rival-checkbox">
+                                    <input type="checkbox" id="rival-yuba" value="yuba">
+                                    <span>Yuba</span>
                                 </label>
                             </div>
                         </div>
@@ -301,12 +445,18 @@
 
             <!-- CENTRAL DUAL TRION BAR -->
             <div class="hud-center">
-                <div class="trion-meter-group" style="display: flex; flex-direction: row; gap: 15px; width: 100%; max-width: 600px; justify-content: center;">
+                <div class="trion-meter-group"
+                    style="display: flex; flex-direction: row; gap: 15px; width: 100%; max-width: 600px; justify-content: center;">
                     <!-- Body HP Meter -->
                     <div class="trion-meter" style="flex: 1;">
-                        <span class="trion-label animate-glow" style="color: var(--border-cyan); text-shadow: 0 0 5px rgba(0, 240, 255, 0.4);">TRION BODY HP</span>
-                        <div class="trion-bar-container" style="border-color: var(--border-cyan); box-shadow: 0 0 6px rgba(0, 240, 255, 0.2);">
-                            <div id="player-hp-bar" class="trion-bar-fill" style="background: linear-gradient(90deg, #005a70, #00f0ff); box-shadow: 0 0 10px var(--border-cyan); width: 100%;"></div>
+                        <span class="trion-label animate-glow"
+                            style="color: var(--border-cyan); text-shadow: 0 0 5px rgba(0, 240, 255, 0.4);">TRION BODY
+                            HP</span>
+                        <div class="trion-bar-container"
+                            style="border-color: var(--border-cyan); box-shadow: 0 0 6px rgba(0, 240, 255, 0.2);">
+                            <div id="player-hp-bar" class="trion-bar-fill"
+                                style="background: linear-gradient(90deg, #005a70, #00f0ff); box-shadow: 0 0 10px var(--border-cyan); width: 100%;">
+                            </div>
                             <span id="player-hp-val-hud" class="trion-numeric">100 / 100</span>
                         </div>
                     </div>
@@ -324,7 +474,7 @@
             <div class="hud-right">
                 <div class="hud-stat-box">
                     <span class="label">TIMER:</span>
-                    <span id="game-timer" class="val">02:30</span>
+                    <span id="game-timer" class="val">05:00</span>
                 </div>
                 <div class="hud-stat-box highlight">
                     <span class="label">YOUR POINTS:</span>

@@ -10,11 +10,41 @@ window.agentImages = {
     hyuse: new Image(),
     custom: new Image()
 };
-window.agentImages.yuma.src = 'YumaChibi.png';
-window.agentImages.osamu.src = 'OsamuChibi.png';
-window.agentImages.chika.src = 'ChikaChibi.png';
-window.agentImages.hyuse.src = 'HyuseChibi.png';
-window.agentImages.custom.src = 'KyosukeChibi.png';
+// Preload character chibi images for both canvas drawing and UI overlays
+window.agentImages = {
+    yuma: new Image(),
+    osamu: new Image(),
+    chika: new Image(),
+    hyuse: new Image(),
+    custom: new Image(),
+    arafune: new Image(),
+    kakizaki: new Image(),
+    murakami: new Image(),
+    azuma: new Image(),
+    ikoma: new Image(),
+    katori: new Image(),
+    nasu: new Image(),
+    suwa: new Image(),
+    kageura: new Image(),
+    ninomiya: new Image(),
+    yuba: new Image()
+};
+window.agentImages.yuma.src = 'chibi/Yuma.png';
+window.agentImages.osamu.src = 'chibi/Osamu.png';
+window.agentImages.chika.src = 'chibi/Chika.png';
+window.agentImages.hyuse.src = 'chibi/Hyuse.png';
+window.agentImages.custom.src = 'chibi/Kyosuke.png';
+window.agentImages.arafune.src = 'chibi/Arafune.jpg';
+window.agentImages.kakizaki.src = 'chibi/Kakizaki.jpg';
+window.agentImages.murakami.src = 'chibi/Murakami.jpg';
+window.agentImages.azuma.src = 'chibi/Azuma.jpg';
+window.agentImages.ikoma.src = 'chibi/Ikoma.jpg';
+window.agentImages.katori.src = 'chibi/Katori.jpg';
+window.agentImages.nasu.src = 'chibi/Nasu.jpg';
+window.agentImages.suwa.src = 'chibi/Suwa.jpg';
+window.agentImages.kageura.src = 'chibi/Kageura.jpg';
+window.agentImages.ninomiya.src = 'chibi/Ninomiya.jpg';
+window.agentImages.yuba.src = 'chibi/Yuba.jpg';
 
 class AIAgent {
     constructor(id, name, preset = 'yuma', difficulty = 'medium') {
@@ -34,11 +64,11 @@ class AIAgent {
 
         // Trion Energy Capacity (scaled to match player presets, multiplied by trionBoostFactor)
         const boost = window.trionBoostFactor || 2.0;
-        this.trionMax = (preset === 'chika' ? 480 : (preset === 'hyuse' ? 240 : (preset === 'osamu' ? 100 : 200))) * boost;
+        this.trionMax = (window.agentPresets && window.agentPresets[preset] ? window.agentPresets[preset].trion * 100 : 900) * boost;
         this.trion = this.trionMax;
 
         const hpBoost = window.hpBoostFactor || 1.0;
-        this.bodyHpMax = 100 * hpBoost;
+        this.bodyHpMax = 1000 * hpBoost;
         this.bodyHp = this.bodyHpMax;
         this.isLeaking = false;
         this.leakRate = 0;
@@ -101,6 +131,66 @@ class AIAgent {
             this.briefcase.main = ["Kogetsu", "Asteroid", "Shield", "Empty"];
             this.briefcase.sub = ["Senku", "Viper", "Shield", "Bagworm"];
             this.speed = 3.6;
+        }
+        else if (preset === 'arafune') {
+            this.briefcase.main = ["Egret", "Ibis", "Kogetsu", "Shield"];
+            this.briefcase.sub = ["Lightning", "Senku", "Bagworm", "Shield"];
+            this.speed = 3.6;
+        }
+        else if (preset === 'kakizaki') {
+            this.briefcase.main = ["Assault Rifle", "Shield", "Empty", "Empty"];
+            this.briefcase.sub = ["Hound", "Bagworm", "Shield", "Empty"];
+            this.speed = 3.4;
+        }
+        else if (preset === 'murakami') {
+            this.briefcase.main = ["Kogetsu", "Raygust", "Shield", "Empty"];
+            this.briefcase.sub = ["Thruster", "Bagworm", "Shield", "Empty"];
+            this.speed = 3.3;
+        }
+        else if (preset === 'azuma') {
+            this.briefcase.main = ["Egret", "Ibis", "Shield", "Empty"];
+            this.briefcase.sub = ["Lightning", "Bagworm", "Shield", "Empty"];
+            this.speed = 3.2;
+        }
+        else if (preset === 'ikoma') {
+            this.briefcase.main = ["Kogetsu", "Shield", "Empty", "Empty"];
+            this.briefcase.sub = ["Senku", "Bagworm", "Shield", "Empty"];
+            this.speed = 3.7;
+        }
+        else if (preset === 'katori') {
+            this.briefcase.main = ["Scorpion", "Assault Rifle", "Shield", "Empty"];
+            this.briefcase.sub = ["Grasshopper", "Bagworm", "Shield", "Empty"];
+            this.speed = 4.0;
+        }
+        else if (preset === 'nasu') {
+            this.briefcase.main = ["Viper", "Asteroid", "Shield", "Empty"];
+            this.briefcase.sub = ["Viper", "Bagworm", "Shield", "Empty"];
+            this.speed = 3.8;
+        }
+        else if (preset === 'suwa') {
+            this.briefcase.main = ["Shotgun", "Shield", "Empty", "Empty"];
+            this.briefcase.sub = ["Shotgun", "Bagworm", "Shield", "Empty"];
+            this.speed = 3.0;
+        }
+        else if (preset === 'kageura') {
+            this.briefcase.main = ["Scorpion", "Shield", "Empty", "Empty"];
+            this.briefcase.sub = ["Scorpion", "Mole Claw", "Bagworm", "Shield"];
+            this.speed = 3.9;
+        }
+        else if (preset === 'ninomiya') {
+            this.briefcase.main = ["Asteroid", "Hound", "Shield", "Empty"];
+            this.briefcase.sub = ["Asteroid", "Hound", "Bagworm", "Shield"];
+            this.speed = 3.4;
+        }
+        else if (preset === 'yuba') {
+            this.briefcase.main = ["Assault Rifle", "Shield", "Empty", "Empty"];
+            this.briefcase.sub = ["Assault Rifle", "Bagworm", "Shield", "Empty"];
+            this.speed = 3.8;
+        }
+        else if (preset === 'custom') {
+            this.briefcase.main = ["Kogetsu", "Hound", "Assault Rifle", "Shield"];
+            this.briefcase.sub = ["Meteora", "Viper", "Lead Bullet", "Bagworm"];
+            this.speed = 3.5;
         }
 
         // Apply difficulty modifiers to speed
@@ -221,7 +311,7 @@ class AIAgent {
         // Active leakage if HP falls below 50%
         if (this.bodyHp < this.bodyHpMax * 0.5 && !this.isLeaking) {
             this.isLeaking = true;
-            this.leakRate = 1; // 1 point per second passively
+            this.leakRate = 10; // 10 points per second passively
             if (typeof addLog !== 'undefined') {
                 addLog(`[WARNING] ${this.name} Trion Body damaged below 50%! Passive Trion Leakage activated!`, 'kill');
             }
@@ -254,8 +344,8 @@ class AIAgent {
         if (this.cooldowns.sub > 0) this.cooldowns.sub -= cdReduction;
 
         // Passive Trion Drain & Leakage
-        if (this.isBagwormActive) this.trion -= 0.03;
-        if (this.isChameleonActive) this.trion -= 0.06;
+        if (this.isBagwormActive) this.trion -= 0.3;
+        if (this.isChameleonActive) this.trion -= 0.6;
 
         if (this.isLeaking) {
             this.bodyHp -= this.leakRate / 60;
@@ -279,7 +369,7 @@ class AIAgent {
         if (arena && arena.spiderWebs) {
             for (const web of arena.spiderWebs) {
                 const dist = pointToLineDistance(this.x, this.y, web.x1, web.y1, web.x2, web.y2);
-                if (dist < this.radius + 3) {
+                if (dist < this.radius + 6) { // Expanded threshold for better responsive overlap feel
                     if (web.ownerId === this.id) {
                         inFriendlySpider = true;
                     } else {
@@ -298,8 +388,14 @@ class AIAgent {
 
         if (inEnemySpider) {
             currentSpeed *= 0.4;
+            if (window.spawnSparks && Math.random() < 0.22) {
+                window.spawnSparks(this.x, this.y, '#bd00ff', 2); // Purple digital slow sparks
+            }
         } else if (inFriendlySpider) {
-            currentSpeed *= 1.3;
+            currentSpeed *= 1.35; // Boost speed by 35%
+            if (window.spawnSparks && Math.random() < 0.22) {
+                window.spawnSparks(this.x, this.y, '#39ff14', 2); // Green speed boost sparks
+            }
         } else if (this.isWeighted) {
             currentSpeed *= Math.max(0.15, 1 - 0.2 * this.weightStacks);
         }
@@ -374,9 +470,7 @@ class AIAgent {
             } else {
                 this.vx = 0;
                 this.vy = 0;
-                if (this.state === 'patrol') {
-                    this.chooseNewPatrolTarget(arena);
-                }
+                this.chooseNewPatrolTarget(arena);
             }
         }
 
@@ -391,7 +485,7 @@ class AIAgent {
         if (collision.collided) {
             this.x = collision.x;
             this.y = collision.y;
-            if (this.state === 'patrol') {
+            if (this.state === 'patrol' || this.state === 'flee' || !this.targetAgent) {
                 this.chooseNewPatrolTarget(arena);
             }
         }
@@ -411,21 +505,26 @@ class AIAgent {
     evaluateState(allAgents) {
         // Snipe state if sniper
         if (this.preset === 'chika') {
-            this.state = this.trion < 40 ? 'flee' : 'snipe';
+            this.state = this.trion < 400 ? 'flee' : 'snipe';
             if (this.state === 'flee') {
                 this.isBagwormActive = true; // cloaked sniper trying to escape
             } else {
-                // Sniper presets use Bagworm while patrolling or randomly while holding angle
-                this.isBagwormActive = Math.random() > 0.4;
+                // Snipers always maintain Bagworm until they aim to shoot!
+                this.isBagwormActive = true;
             }
             return;
         }
 
-        if (this.trion < 30) {
+        if (this.trion < 300) {
             this.state = 'flee';
             this.isBagwormActive = true; // hide to run away
         } else {
-            this.isBagwormActive = Math.random() > 0.6; // randomly deploy camouflage
+            // Deploy Bagworm if patrolling to maintain stealth. Only deactivate when actively chasing or fighting.
+            if (this.state === 'patrol' || !this.targetAgent) {
+                this.isBagwormActive = true;
+            } else {
+                this.isBagwormActive = Math.random() > 0.5; // occasionally hide while chasing
+            }
             this.state = Math.random() > 0.4 ? 'chase' : 'patrol';
         }
     }
@@ -473,7 +572,7 @@ class AIAgent {
             // Turn shield on towards attack angle
             this.angle = incomingAngle;
             // Shield cost: passive consumption on frame
-            this.trion -= 0.1;
+            this.trion -= 1.0;
             this.isShieldActive = true;
         } else {
             this.isShieldActive = false;
@@ -483,50 +582,119 @@ class AIAgent {
     performCombatAction(dist, bullets, grPads, arena) {
         if (this.isChameleonActive) return; // Chameleon strictly locks other slots and blocks AI actions!
 
-        const isSniper = this.preset === 'chika';
-        const isAttacker = this.preset === 'yuma';
-        const isShooter = this.preset === 'osamu';
-        const isAllRounder = this.preset === 'hyuse';
+        const mainTrigName = this.briefcase.main[this.activeMain];
+        const subTrigName = this.briefcase.sub[this.activeSub];
+        const mainConfig = window.TRIGGER_CATALOG[mainTrigName];
+        const subConfig = window.TRIGGER_CATALOG[subTrigName];
 
-        // 1. Snipers Action (Egret / Lightning)
-        // 1. Snipers Action (Egret / Lightning)
-        if (isSniper && this.cooldowns.main <= 0) {
-            const slotIndex = Math.random() > 0.5 ? 1 : 0;
-            const weaponName = this.briefcase.main[slotIndex];
-            const trig = window.TRIGGER_CATALOG[weaponName];
+        // ==========================================
+        // 1. TACTICAL SPECIAL MOVEMENTS & TRAPPING SUPPORT
+        // ==========================================
 
-            if (trig && (trig.name === 'Ibis' || trig.name === 'Lightning' || trig.name === 'Egret')) {
-                // Check opposite hand for Lead Bullet
+        // A. Osamu & Katori: Spider Wire placement anywhere with mesh auto-connections!
+        const hasSpider = this.briefcase.main.includes('Spider') || this.briefcase.sub.includes('Spider');
+        if (hasSpider && dist < 240 && this.cooldowns.sub <= 0 && this.trion >= 40 && Math.random() > 0.65) {
+            this.isBagwormActive = false;
+            this.trion -= 40;
+
+            // Spawn tripwire connecting local points near targets/AI
+            const angleOffset = (Math.random() - 0.5) * 1.6;
+            const wLen = 90 + Math.random() * 90;
+            const x1 = this.x - Math.cos(this.angle + angleOffset) * 35;
+            const y1 = this.y - Math.sin(this.angle + angleOffset) * 35;
+            const x2 = this.x + Math.cos(this.angle + angleOffset) * wLen;
+            const y2 = this.y + Math.sin(this.angle + angleOffset) * wLen;
+
+            arena.addSpiderWeb(x1, y1, x2, y2, this.id);
+            window.audio.playShieldBlock();
+            this.cooldowns.sub = 800; // ms
+            return;
+        }
+
+        // B. Yuma & Katori: Grasshopper Neon Jump Pads
+        const hasGrasshopper = this.briefcase.main.includes('Grasshopper') || this.briefcase.sub.includes('Grasshopper');
+        if (hasGrasshopper && dist > 100 && dist < 220 && this.cooldowns.sub <= 0 && this.trion >= 30 && Math.random() > 0.6) {
+            this.trion -= 30;
+            grPads.push(new window.GrasshopperPad(this.x, this.y, this.id));
+            this.cooldowns.sub = 450;
+            return;
+        }
+
+        // C. Murakami: Raygust + Thruster Dash-Slash forward!
+        const hasRaygust = mainTrigName === 'Raygust' || subTrigName === 'Raygust';
+        const hasThruster = this.briefcase.main.includes('Thruster') || this.briefcase.sub.includes('Thruster');
+        if (hasRaygust && hasThruster && dist > 75 && dist < 220 && this.cooldowns.sub <= 0 && this.trion >= 40 && Math.random() > 0.6) {
+            this.isBagwormActive = false;
+            this.trion -= 40;
+            window.audio.playThruster();
+
+            // Set active main/sub slots to Raygust and Thruster
+            const raygustIdx = this.briefcase.main.indexOf('Raygust');
+            if (raygustIdx !== -1) this.activeMain = raygustIdx;
+
+            const thrusterIdx = this.briefcase.sub.indexOf('Thruster');
+            if (thrusterIdx !== -1) this.activeSub = thrusterIdx;
+
+            const dashSpeed = 22;
+            this.vx = Math.cos(this.angle) * dashSpeed;
+            this.vy = Math.sin(this.angle) * dashSpeed;
+            this.isDashing = true;
+            this.dashTimer = 12; // locks movement for 12 frames
+            this.isWeighted = false; // clear weights during dash
+
+            if (window.spawnSparks) {
+                window.spawnSparks(this.x - Math.cos(this.angle) * 15, this.y - Math.sin(this.angle) * 15, '#00f0ff', 20);
+            }
+            this.cooldowns.sub = 1200; // cooldown
+            return;
+        }
+
+        // ==========================================
+        // 2. LONG RANGE SNIPERS WEAPONS (Egret, Ibis, Lightning)
+        // ==========================================
+        const hasSniperWeapon = this.briefcase.main.some(t => t === 'Egret' || t === 'Ibis' || t === 'Lightning');
+        if (hasSniperWeapon && dist > 180 && this.cooldowns.main <= 0) {
+            const sniperSlots = [];
+            this.briefcase.main.forEach((t, idx) => {
+                if (t === 'Egret' || t === 'Ibis' || t === 'Lightning') {
+                    sniperSlots.push({ name: t, index: idx });
+                }
+            });
+
+            if (sniperSlots.length > 0) {
+                const selectedSlot = sniperSlots[Math.floor(Math.random() * sniperSlots.length)];
+                const weaponName = selectedSlot.name;
+                const trig = window.TRIGGER_CATALOG[weaponName];
+                this.activeMain = selectedSlot.index;
+
                 const leadActive = this.briefcase.sub.includes('Lead Bullet');
+                let extraCost = leadActive ? 40 : 0;
 
-                // Deduct cost
-                let extraCost = leadActive ? 4 : 0;
                 if (this.trion >= trig.trionCost + extraCost) {
                     this.trion -= (trig.trionCost + extraCost);
                 } else {
                     return;
                 }
 
-                // Check Raycast line of sight with organic aiming offsets
+                // AI Aiming offsets based on difficulty
                 let targetX = this.targetAgent.x;
                 let targetY = this.targetAgent.y;
                 if (this.difficulty === 'easy') {
-                    targetX += (Math.random() - 0.5) * 75;
-                    targetY += (Math.random() - 0.5) * 75;
+                    targetX += (Math.random() - 0.5) * 85;
+                    targetY += (Math.random() - 0.5) * 85;
                 } else if (this.difficulty === 'medium') {
                     targetX += (Math.random() - 0.5) * 20;
                     targetY += (Math.random() - 0.5) * 20;
                 }
 
                 const ray = arena.raycast(this.x, this.y, targetX, targetY);
-                if (!ray.hit) { // Direct line of sight!
-                    this.isBagwormActive = false; // Discharging trigger deactivates Bagworm
+                if (!ray.hit) { // Direct clear line of sight
+                    this.isBagwormActive = false; // Discharging deactivates Bagworm
+
                     if (weaponName === 'Ibis') {
-                        // Shoot giant slow projectile
                         let shootAngle = this.angle;
-                        if (this.difficulty === 'easy') {
-                            shootAngle += (Math.random() - 0.5) * 0.25;
-                        }
+                        if (this.difficulty === 'easy') shootAngle += (Math.random() - 0.5) * 0.25;
+
                         bullets.push(new window.Bullet(this.x, this.y, shootAngle, {
                             type: 'ibis',
                             damage: leadActive ? 0 : trig.damage,
@@ -538,12 +706,26 @@ class AIAgent {
                         }));
                         window.audio.playShoot('meteora');
                     } else {
-                        // Hitscan Lightning / Egret
+                        // Hitscan Egret or Lightning
                         let didHit = true;
-                        if (this.difficulty === 'easy' && Math.random() > 0.4) didHit = false;
+                        if (this.difficulty === 'easy' && Math.random() > 0.45) didHit = false;
                         else if (this.difficulty === 'medium' && Math.random() > 0.85) didHit = false;
 
                         window.audio.playHitscan(weaponName === 'Lightning');
+
+                        const laserParts = (typeof particles !== 'undefined') ? particles : (window.particles || null);
+                        if (laserParts) {
+                            laserParts.push({
+                                type: 'laser',
+                                x1: this.x,
+                                y1: this.y,
+                                x2: ray.x,
+                                y2: ray.y,
+                                color: leadActive ? 'rgba(18, 18, 18, 0.95)' : (weaponName === 'Lightning' ? 'rgba(0, 240, 255, 0.8)' : 'rgba(255,255,255,0.7)'),
+                                life: 15
+                            });
+                        }
+
                         if (didHit) {
                             const weaponKey = weaponName.toLowerCase();
                             this.targetAgent.takeDamage(leadActive ? 0 : trig.damage, this.id, leadActive, weaponKey);
@@ -558,84 +740,145 @@ class AIAgent {
                         }
                     }
                     this.cooldowns.main = trig.cooldown;
+                    return;
                 }
             }
         }
 
-        // Tactically select the best trigger slot depending on range
+        // ==========================================
+        // 3. COMPOSITE FUSIONS ATTACKS (Ninomiya/High Trion Shooters)
+        // ==========================================
+        const canFuse = this.briefcase.main.includes('Asteroid') && this.briefcase.sub.includes('Hound');
+        if (canFuse && this.trion > 420 && this.cooldowns.main <= 0 && this.cooldowns.sub <= 0 && Math.random() > 0.65) {
+            this.isBagwormActive = false;
+            this.trion -= 80;
+
+            const isGimlet = Math.random() > 0.5;
+            if (isGimlet) {
+                window.audio.playShoot('meteora');
+                bullets.push(new window.Bullet(this.x, this.y, this.angle, {
+                    type: 'gimlet',
+                    damage: 360,
+                    speed: 13,
+                    ownerId: this.id,
+                    color: '#ffd700',
+                    size: 14,
+                    isComposite: true
+                }));
+                if (typeof addLog !== 'undefined') {
+                    addLog(`[TACTICAL] AI ${this.name} fused Gimlet shield-piercing composite bullet!`, 'system');
+                }
+            } else {
+                if (typeof addLog !== 'undefined') {
+                    addLog(`[TACTICAL] AI ${this.name} fused Hornet accelerating homing composite swarm!`, 'system');
+                }
+                for (let i = 0; i < 4; i++) {
+                    setTimeout(() => {
+                        if (this.bailedOut || !matchActive) return;
+                        bullets.push(new window.Bullet(this.x, this.y, this.angle + (Math.random() - 0.5) * 0.25, {
+                            type: 'hornet',
+                            damage: 180,
+                            speed: 9,
+                            ownerId: this.id,
+                            color: '#bd00ff',
+                            size: 8,
+                            isComposite: true
+                        }));
+                        window.audio.playShoot('hound');
+                    }, i * 100);
+                }
+            }
+
+            this.cooldowns.main = 1500;
+            this.cooldowns.sub = 1500;
+            return;
+        }
+
+        // Tactically cycle main/sub active slots based on target distance
         if (dist < 80) {
             const mainAttackerIdx = this.briefcase.main.findIndex(t => window.TRIGGER_CATALOG[t] && window.TRIGGER_CATALOG[t].category === 'attacker');
-            if (mainAttackerIdx !== -1 && this.activeMain !== mainAttackerIdx) {
-                this.activeMain = mainAttackerIdx;
-            }
+            if (mainAttackerIdx !== -1 && this.activeMain !== mainAttackerIdx) this.activeMain = mainAttackerIdx;
+
             const subAttackerIdx = this.briefcase.sub.findIndex(t => window.TRIGGER_CATALOG[t] && window.TRIGGER_CATALOG[t].category === 'attacker');
-            if (subAttackerIdx !== -1 && this.activeSub !== subAttackerIdx) {
-                this.activeSub = subAttackerIdx;
-            }
+            if (subAttackerIdx !== -1 && this.activeSub !== subAttackerIdx) this.activeSub = subAttackerIdx;
         } else if (dist > 120 && dist < 450) {
-            const mainShooterIdx = this.briefcase.main.findIndex(t => window.TRIGGER_CATALOG[t] && window.TRIGGER_CATALOG[t].category === 'shooter');
-            if (mainShooterIdx !== -1 && this.activeMain !== mainShooterIdx) {
-                this.activeMain = mainShooterIdx;
-            }
+            const mainShooterIdx = this.briefcase.main.findIndex(t => window.TRIGGER_CATALOG[t] && (window.TRIGGER_CATALOG[t].category === 'shooter' || window.TRIGGER_CATALOG[t].category === 'gunner'));
+            if (mainShooterIdx !== -1 && this.activeMain !== mainShooterIdx) this.activeMain = mainShooterIdx;
         }
 
-        // 2. Attackers Action (Scorpion / Kogetsu / Raygust / Thruster / Grasshopper)
-        const mainTrigName = this.briefcase.main[this.activeMain];
-        const mainConfig = window.TRIGGER_CATALOG[mainTrigName];
-        if (mainConfig && mainConfig.category === 'attacker') {
-            if (dist < (mainConfig.range || 40) && this.cooldowns.main <= 0 && this.trion >= mainConfig.trionCost) {
-                this.isBagwormActive = false; // Close-range slash deactivates Bagworm
-                this.trion -= mainConfig.trionCost;
+        // ==========================================
+        // 4. ATTACKER MELEE SLASHES (Kogetsu, Scorpion, Raygust, Senku)
+        // ==========================================
+        const activeMainName = this.briefcase.main[this.activeMain];
+        const activeSubName = this.briefcase.sub[this.activeSub];
+        const activeMainConfig = window.TRIGGER_CATALOG[activeMainName];
 
-                let damage = mainConfig.damage || 22;
-                const isKogetsu = mainTrigName === 'Kogetsu';
-                const hasDualKogetsu = isKogetsu && this.briefcase.sub[this.activeSub] === 'Kogetsu';
-                if (hasDualKogetsu) {
-                    damage = Math.floor(damage * 1.25);
-                }
+        if (activeMainConfig && activeMainConfig.category === 'attacker') {
+            // A. Senku Medium Range Kogetsu sweep (AI Ikoma / Arafune signature)
+            const hasSenku = this.briefcase.sub.includes('Senku');
+            if (activeMainName === 'Kogetsu' && hasSenku && dist > 45 && dist < 160 && this.cooldowns.sub <= 0 && this.trion >= 60) {
+                this.isBagwormActive = false;
+                this.trion -= 60;
+                window.audio.playSenku();
+                this.targetAgent.takeDamage(450, this.id);
+                this.cooldowns.sub = 800; // ms
 
-                window.audio.playSlash(mainTrigName === 'Scorpion');
-                this.targetAgent.takeDamage(damage, this.id);
-                this.cooldowns.main = mainConfig.cooldown || 140;
-
-                // Spawn slash particles
-                const parts = (typeof particles !== 'undefined') ? particles : (window.particles || null);
-                if (parts) {
-                    parts.push({
+                const slashParts = (typeof particles !== 'undefined') ? particles : (window.particles || null);
+                if (slashParts) {
+                    slashParts.push({
                         type: 'slash',
                         x: this.x,
                         y: this.y,
                         angle: this.angle,
-                        color: mainTrigName === 'Scorpion' ? '#ff3b30' : (isKogetsu ? '#00f0ff' : '#00ff14'),
+                        color: '#ffffff',
                         life: 10,
                         maxLife: 10,
-                        range: mainConfig.range || 45
+                        range: 160
                     });
                 }
-            } else if (dist > 100 && dist < 220 && this.cooldowns.sub <= 0 && Math.random() > 0.7) {
-                if (this.briefcase.sub[this.activeSub] === 'Grasshopper' || this.briefcase.main[this.activeMain] === 'Grasshopper') {
-                    if (this.trion >= 3) { // Grasshopper trion cost is 3
-                        this.trion -= 3;
-                        grPads.push(new window.GrasshopperPad(this.x, this.y, this.id));
-                        this.cooldowns.sub = 400;
-                    }
+                return;
+            }
+
+            // B. Close Range Melee sweeps
+            if (dist < (activeMainConfig.range || 40) && this.cooldowns.main <= 0 && this.trion >= activeMainConfig.trionCost) {
+                this.isBagwormActive = false;
+                this.trion -= activeMainConfig.trionCost;
+
+                let damage = activeMainConfig.damage || 22;
+                const isKogetsu = activeMainName === 'Kogetsu';
+                const hasDualKogetsu = isKogetsu && activeSubName === 'Kogetsu';
+                if (hasDualKogetsu) damage = Math.floor(damage * 1.25);
+
+                window.audio.playSlash(activeMainName === 'Scorpion');
+                this.targetAgent.takeDamage(damage, this.id);
+                this.cooldowns.main = activeMainConfig.cooldown || 140;
+
+                const slashParts = (typeof particles !== 'undefined') ? particles : (window.particles || null);
+                if (slashParts) {
+                    slashParts.push({
+                        type: 'slash',
+                        x: this.x,
+                        y: this.y,
+                        angle: this.angle,
+                        color: activeMainName === 'Scorpion' ? '#ff3b30' : (isKogetsu ? '#00f0ff' : '#00ff14'),
+                        life: 10,
+                        maxLife: 10,
+                        range: activeMainConfig.range || 45
+                    });
                 }
+                return;
             }
         }
 
-        // 3. Shooter / All-Rounder Action (Hound / Meteora / Viper)
-        const activeMainTrig = this.briefcase.main[this.activeMain];
-        const activeSubTrig = this.briefcase.sub[this.activeSub];
-        const mainTrig = window.TRIGGER_CATALOG[activeMainTrig];
-
-        if (mainTrig && mainTrig.category === 'shooter' && this.cooldowns.main <= 0) {
-            const bulletType = activeMainTrig.toLowerCase();
+        // ==========================================
+        // 5. SHOOTERS TRIGGERS (Asteroid, Hound, Meteora, Viper)
+        // ==========================================
+        if (activeMainConfig && activeMainConfig.category === 'shooter' && this.cooldowns.main <= 0) {
+            const bulletType = activeMainName.toLowerCase();
             const leadActive = this.briefcase.sub.includes('Lead Bullet');
+            const isDualShooter = (activeMainName === activeSubName);
 
-            // Check if dual shooter (identical active Shooter trigger in both slots)
-            const isDualShooter = (activeMainTrig === activeSubTrig);
-
-            let bulletCost = mainTrig.trionCost + (leadActive ? 4 : 0);
+            let bulletCost = activeMainConfig.trionCost + (leadActive ? 40 : 0);
             let fireDouble = false;
 
             if (isDualShooter && this.trion >= bulletCost * 2) {
@@ -650,7 +893,6 @@ class AIAgent {
                 return;
             }
 
-            // Apply shooting angle error based on difficulty
             let shootAngle = this.angle;
             if (this.difficulty === 'easy') {
                 shootAngle += (Math.random() - 0.5) * 0.35;
@@ -659,9 +901,10 @@ class AIAgent {
             }
 
             if (bulletType === 'viper') {
-                // If AI uses Viper, let's create dynamic waypoints for zigzag or curve
-                const p1 = { x: this.x + Math.cos(shootAngle - 0.4) * 80, y: this.y + Math.sin(shootAngle - 0.4) * 80 };
-                const p2 = { x: this.x + Math.cos(shootAngle + 0.4) * 160, y: this.y + Math.sin(shootAngle + 0.4) * 160 };
+                // Programmable viper bullet trajectories for Rei Nasu/AI Shooters
+                const curveOffset = Math.random() > 0.5 ? 0.45 : -0.45;
+                const p1 = { x: this.x + Math.cos(shootAngle + curveOffset) * 80, y: this.y + Math.sin(shootAngle + curveOffset) * 80 };
+                const p2 = { x: this.x + Math.cos(shootAngle - curveOffset) * 160, y: this.y + Math.sin(shootAngle - curveOffset) * 160 };
                 const p3 = { x: this.x + Math.cos(shootAngle) * 320, y: this.y + Math.sin(shootAngle) * 320 };
                 const wps = [p1, p2, p3];
 
@@ -671,34 +914,34 @@ class AIAgent {
 
                     bullets.push(new window.Bullet(this.x + ox, this.y + oy, shootAngle, {
                         type: 'viper',
-                        damage: leadActive ? 0 : mainTrig.damage,
-                        speed: mainTrig.speed,
+                        damage: leadActive ? 0 : activeMainConfig.damage,
+                        speed: activeMainConfig.speed,
                         ownerId: this.id,
                         waypoints: wps.map(wp => ({ x: wp.x + ox, y: wp.y + oy })),
                         isLeadBullet: leadActive,
-                        color: leadActive ? '#121212' : '#ffdf00',
+                        color: leadActive ? '#121212' : '#ffc107',
                         size: leadActive ? 12 : 8
                     }));
 
                     bullets.push(new window.Bullet(this.x - ox, this.y - oy, shootAngle, {
                         type: 'viper',
-                        damage: leadActive ? 0 : mainTrig.damage,
-                        speed: mainTrig.speed,
+                        damage: leadActive ? 0 : activeMainConfig.damage,
+                        speed: activeMainConfig.speed,
                         ownerId: this.id,
                         waypoints: wps.map(wp => ({ x: wp.x - ox, y: wp.y - oy })),
                         isLeadBullet: leadActive,
-                        color: leadActive ? '#121212' : '#ffdf00',
+                        color: leadActive ? '#121212' : '#ffc107',
                         size: leadActive ? 12 : 8
                     }));
                 } else {
                     bullets.push(new window.Bullet(this.x, this.y, shootAngle, {
                         type: 'viper',
-                        damage: leadActive ? 0 : mainTrig.damage,
-                        speed: mainTrig.speed,
+                        damage: leadActive ? 0 : activeMainConfig.damage,
+                        speed: activeMainConfig.speed,
                         ownerId: this.id,
                         waypoints: wps,
                         isLeadBullet: leadActive,
-                        color: leadActive ? '#121212' : '#ffdf00',
+                        color: leadActive ? '#121212' : '#ffc107',
                         size: leadActive ? 12 : 8
                     }));
                 }
@@ -706,8 +949,8 @@ class AIAgent {
                 if (fireDouble) {
                     bullets.push(new window.Bullet(this.x, this.y, shootAngle - 0.08, {
                         type: bulletType,
-                        damage: leadActive ? 0 : mainTrig.damage,
-                        speed: mainTrig.speed,
+                        damage: leadActive ? 0 : activeMainConfig.damage,
+                        speed: activeMainConfig.speed,
                         ownerId: this.id,
                         isLeadBullet: leadActive,
                         color: leadActive ? '#121212' : (bulletType === 'meteora' ? '#ff3b30' : '#ffdf00'),
@@ -715,8 +958,8 @@ class AIAgent {
                     }));
                     bullets.push(new window.Bullet(this.x, this.y, shootAngle + 0.08, {
                         type: bulletType,
-                        damage: leadActive ? 0 : mainTrig.damage,
-                        speed: mainTrig.speed,
+                        damage: leadActive ? 0 : activeMainConfig.damage,
+                        speed: activeMainConfig.speed,
                         ownerId: this.id,
                         isLeadBullet: leadActive,
                         color: leadActive ? '#121212' : (bulletType === 'meteora' ? '#ff3b30' : '#ffdf00'),
@@ -725,8 +968,8 @@ class AIAgent {
                 } else {
                     bullets.push(new window.Bullet(this.x, this.y, shootAngle, {
                         type: bulletType,
-                        damage: leadActive ? 0 : mainTrig.damage,
-                        speed: mainTrig.speed,
+                        damage: leadActive ? 0 : activeMainConfig.damage,
+                        speed: activeMainConfig.speed,
                         ownerId: this.id,
                         isLeadBullet: leadActive,
                         color: leadActive ? '#121212' : (bulletType === 'meteora' ? '#ff3b30' : '#ffdf00'),
@@ -736,11 +979,62 @@ class AIAgent {
             }
 
             window.audio.playShoot(bulletType);
-            this.cooldowns.main = mainTrig.cooldown;
+            this.cooldowns.main = activeMainConfig.cooldown;
+            return;
+        }
 
-            if (Math.random() > 0.8) {
-                this.activeMain = (this.activeMain + 1) % 4;
+        // ==========================================
+        // 6. GUNNERS TRIGGERS (Assault Rifle, Shotgun)
+        // ==========================================
+        if (activeMainConfig && activeMainConfig.category === 'gunner' && this.cooldowns.main <= 0) {
+            const leadActive = this.briefcase.sub.includes('Lead Bullet');
+            let bulletCost = activeMainConfig.trionCost + (leadActive ? 40 : 0);
+
+            if (this.trion >= bulletCost) {
+                this.isBagwormActive = false; // Discharging shooter bullets deactivates Bagworm
+                this.trion -= bulletCost;
+            } else {
+                return;
             }
+
+            let shootAngle = this.angle;
+            if (this.difficulty === 'easy') {
+                shootAngle += (Math.random() - 0.5) * 0.25;
+            } else if (this.difficulty === 'medium') {
+                shootAngle += (Math.random() - 0.5) * 0.10;
+            }
+
+            if (activeMainName === 'Assault Rifle') {
+                const spread = (Math.random() - 0.5) * 0.15;
+                bullets.push(new window.Bullet(this.x, this.y, shootAngle + spread, {
+                    type: 'asteroid',
+                    damage: leadActive ? 0 : activeMainConfig.damage,
+                    speed: activeMainConfig.speed,
+                    ownerId: this.id,
+                    isLeadBullet: leadActive,
+                    color: leadActive ? '#121212' : '#ffdf00',
+                    size: leadActive ? 10 : 6
+                }));
+                window.audio.playShoot('gunner');
+            } else if (activeMainName === 'Shotgun') {
+                for (let i = -2; i <= 2; i++) {
+                    const spreadAngle = shootAngle + i * 0.08;
+                    bullets.push(new window.Bullet(this.x, this.y, spreadAngle, {
+                        type: 'asteroid',
+                        damage: leadActive ? 0 : activeMainConfig.damage - 2,
+                        speed: activeMainConfig.speed + (Math.random() - 0.5) * 2,
+                        ownerId: this.id,
+                        isLeadBullet: leadActive,
+                        color: leadActive ? '#121212' : '#ff9500',
+                        size: leadActive ? 9 : 5,
+                        life: 35
+                    }));
+                }
+                window.audio.playShoot('gunner');
+            }
+
+            this.cooldowns.main = activeMainConfig.cooldown;
+            return;
         }
     }
 

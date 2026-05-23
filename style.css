@@ -265,13 +265,50 @@ h3,
 }
 
 /* Agent Selection List */
-.agent-panel {
+.agent-panel,
+.briefcase-panel {
     max-height: calc(100vh - 150px);
+    overflow-y: auto;
+}
+
+/* Custom Scrollbars for Panels */
+.agent-panel::-webkit-scrollbar,
+.briefcase-panel::-webkit-scrollbar,
+.scrollable::-webkit-scrollbar,
+.bailout-details::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.agent-panel::-webkit-scrollbar-track,
+.briefcase-panel::-webkit-scrollbar-track,
+.scrollable::-webkit-scrollbar-track,
+.bailout-details::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+}
+
+.agent-panel::-webkit-scrollbar-thumb,
+.briefcase-panel::-webkit-scrollbar-thumb,
+.scrollable::-webkit-scrollbar-thumb,
+.bailout-details::-webkit-scrollbar-thumb {
+    background: var(--border-cyan);
+    border-radius: 3px;
+    box-shadow: 0 0 5px var(--border-cyan);
+}
+
+.agent-panel::-webkit-scrollbar-thumb:hover,
+.briefcase-panel::-webkit-scrollbar-thumb:hover,
+.scrollable::-webkit-scrollbar-thumb:hover,
+.bailout-details::-webkit-scrollbar-thumb:hover {
+    background: var(--border-green);
+    box-shadow: 0 0 5px var(--border-green);
 }
 
 .agent-grid {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 10px;
     padding: 20px;
     overflow-y: auto;
@@ -288,6 +325,7 @@ h3,
     cursor: pointer;
     transition: all 0.3s ease;
     text-align: left;
+    width: 48.5%;
 }
 
 .agent-card:hover {
@@ -318,35 +356,112 @@ h3,
 
 /* Avatar Colors (Applying uploaded chibi character photos over signature glowing gradients) */
 .agent-avatar.yuma {
-    background-image: url('YumaChibi.png'), radial-gradient(circle, rgba(255, 255, 255, 0.25) 30%, rgba(58, 58, 58, 0.6) 90%);
+    background-image: url('chibi/Yuma.png'), radial-gradient(circle, rgba(255, 255, 255, 0.25) 30%, rgba(58, 58, 58, 0.6) 90%);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .agent-avatar.osamu {
-    background-image: url('OsamuChibi.png'), radial-gradient(circle, rgba(68, 138, 255, 0.25) 30%, rgba(26, 35, 126, 0.6) 90%);
+    background-image: url('chibi/Osamu.png'), radial-gradient(circle, rgba(68, 138, 255, 0.25) 30%, rgba(26, 35, 126, 0.6) 90%);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .agent-avatar.chika {
-    background-image: url('ChikaChibi.png'), radial-gradient(circle, rgba(255, 235, 59, 0.25) 30%, rgba(245, 127, 23, 0.6) 90%);
+    background-image: url('chibi/Chika.png'), radial-gradient(circle, rgba(255, 235, 59, 0.25) 30%, rgba(245, 127, 23, 0.6) 90%);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .agent-avatar.hyuse {
-    background-image: url('HyuseChibi.png'), radial-gradient(circle, rgba(0, 230, 118, 0.25) 30%, rgba(0, 96, 100, 0.6) 90%);
+    background-image: url('chibi/Hyuse.png'), radial-gradient(circle, rgba(0, 230, 118, 0.25) 30%, rgba(0, 96, 100, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.arafune {
+    background-image: url('chibi/Arafune.jpg'), radial-gradient(circle, rgba(68, 138, 255, 0.25) 30%, rgba(26, 35, 126, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.kakizaki {
+    background-image: url('chibi/Kakizaki.jpg'), radial-gradient(circle, rgba(0, 150, 136, 0.25) 30%, rgba(0, 77, 64, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.murakami {
+    background-image: url('chibi/Murakami.jpg'), radial-gradient(circle, rgba(0, 229, 255, 0.25) 30%, rgba(0, 96, 100, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.azuma {
+    background-image: url('chibi/Azuma.jpg'), radial-gradient(circle, rgba(76, 175, 80, 0.25) 30%, rgba(27, 94, 32, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.ikoma {
+    background-image: url('chibi/Ikoma.jpg'), radial-gradient(circle, rgba(244, 67, 54, 0.25) 30%, rgba(183, 28, 28, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.katori {
+    background-image: url('chibi/Katori.jpg'), radial-gradient(circle, rgba(233, 30, 99, 0.25) 30%, rgba(136, 14, 79, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.nasu {
+    background-image: url('chibi/Nasu.jpg'), radial-gradient(circle, rgba(156, 39, 176, 0.25) 30%, rgba(74, 20, 140, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.suwa {
+    background-image: url('chibi/Suwa.jpg'), radial-gradient(circle, rgba(255, 152, 0, 0.25) 30%, rgba(230, 81, 0, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.kageura {
+    background-image: url('chibi/Kageura.jpg'), radial-gradient(circle, rgba(183, 28, 28, 0.25) 30%, rgba(33, 33, 33, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.ninomiya {
+    background-image: url('chibi/Ninomiya.jpg'), radial-gradient(circle, rgba(255, 215, 0, 0.25) 30%, rgba(245, 127, 23, 0.6) 90%);
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.agent-avatar.yuba {
+    background-image: url('chibi/Yuba.jpg'), radial-gradient(circle, rgba(255, 193, 7, 0.25) 30%, rgba(255, 111, 0, 0.6) 90%);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .agent-avatar.custom {
-    background-image: url('KyosukeChibi.png'), radial-gradient(circle, rgba(224, 224, 224, 0.25) 20%, rgba(66, 66, 66, 0.6) 80%);
+    background-image: url('chibi/Kyosuke.png'), radial-gradient(circle, rgba(224, 224, 224, 0.25) 20%, rgba(66, 66, 66, 0.6) 80%);
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
@@ -408,31 +523,97 @@ h3,
 }
 
 .agent-portrait.yuma {
-    background-image: url('YumaChibi.png'), radial-gradient(circle, rgba(255, 255, 255, 0.25) 30%, rgba(58, 58, 58, 0.5) 90%);
+    background-image: url('chibi/Yuma.png'), radial-gradient(circle, rgba(255, 255, 255, 0.25) 30%, rgba(58, 58, 58, 0.5) 90%);
     border-color: var(--border-cyan);
     box-shadow: 0 0 15px rgba(0, 240, 255, 0.35);
 }
 
 .agent-portrait.osamu {
-    background-image: url('OsamuChibi.png'), radial-gradient(circle, rgba(68, 138, 255, 0.25) 30%, rgba(26, 35, 126, 0.5) 90%);
+    background-image: url('chibi/Osamu.png'), radial-gradient(circle, rgba(68, 138, 255, 0.25) 30%, rgba(26, 35, 126, 0.5) 90%);
     border-color: #448aff;
     box-shadow: 0 0 15px rgba(68, 138, 255, 0.35);
 }
 
 .agent-portrait.chika {
-    background-image: url('ChikaChibi.png'), radial-gradient(circle, rgba(255, 235, 59, 0.25) 30%, rgba(245, 127, 23, 0.5) 90%);
+    background-image: url('chibi/Chika.png'), radial-gradient(circle, rgba(255, 235, 59, 0.25) 30%, rgba(245, 127, 23, 0.5) 90%);
     border-color: var(--border-yellow);
     box-shadow: 0 0 15px rgba(255, 235, 59, 0.35);
 }
 
 .agent-portrait.hyuse {
-    background-image: url('HyuseChibi.png'), radial-gradient(circle, rgba(0, 230, 118, 0.25) 30%, rgba(0, 96, 100, 0.5) 90%);
+    background-image: url('chibi/Hyuse.png'), radial-gradient(circle, rgba(0, 230, 118, 0.25) 30%, rgba(0, 96, 100, 0.5) 90%);
     border-color: var(--border-green);
     box-shadow: 0 0 15px rgba(0, 230, 118, 0.35);
 }
 
+.agent-portrait.arafune {
+    background-image: url('chibi/Arafune.jpg'), radial-gradient(circle, rgba(68, 138, 255, 0.25) 30%, rgba(26, 35, 126, 0.5) 90%);
+    border-color: #448aff;
+    box-shadow: 0 0 15px rgba(68, 138, 255, 0.35);
+}
+
+.agent-portrait.kakizaki {
+    background-image: url('chibi/Kakizaki.jpg'), radial-gradient(circle, rgba(0, 150, 136, 0.25) 30%, rgba(0, 77, 64, 0.5) 90%);
+    border-color: #009688;
+    box-shadow: 0 0 15px rgba(0, 150, 136, 0.35);
+}
+
+.agent-portrait.murakami {
+    background-image: url('chibi/Murakami.jpg'), radial-gradient(circle, rgba(0, 229, 255, 0.25) 30%, rgba(0, 96, 100, 0.5) 90%);
+    border-color: #00e5ff;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.35);
+}
+
+.agent-portrait.azuma {
+    background-image: url('chibi/Azuma.jpg'), radial-gradient(circle, rgba(76, 175, 80, 0.25) 30%, rgba(27, 94, 32, 0.5) 90%);
+    border-color: #4caf50;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.35);
+}
+
+.agent-portrait.ikoma {
+    background-image: url('chibi/Ikoma.jpg'), radial-gradient(circle, rgba(244, 67, 54, 0.25) 30%, rgba(183, 28, 28, 0.5) 90%);
+    border-color: #f44336;
+    box-shadow: 0 0 15px rgba(244, 67, 54, 0.35);
+}
+
+.agent-portrait.katori {
+    background-image: url('chibi/Katori.jpg'), radial-gradient(circle, rgba(233, 30, 99, 0.25) 30%, rgba(136, 14, 79, 0.5) 90%);
+    border-color: #e91e63;
+    box-shadow: 0 0 15px rgba(233, 30, 99, 0.35);
+}
+
+.agent-portrait.nasu {
+    background-image: url('chibi/Nasu.jpg'), radial-gradient(circle, rgba(156, 39, 176, 0.25) 30%, rgba(74, 20, 140, 0.5) 90%);
+    border-color: #9c27b0;
+    box-shadow: 0 0 15px rgba(156, 39, 176, 0.35);
+}
+
+.agent-portrait.suwa {
+    background-image: url('chibi/Suwa.jpg'), radial-gradient(circle, rgba(255, 152, 0, 0.25) 30%, rgba(230, 81, 0, 0.5) 90%);
+    border-color: #ff9800;
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.35);
+}
+
+.agent-portrait.kageura {
+    background-image: url('chibi/Kageura.jpg'), radial-gradient(circle, rgba(183, 28, 28, 0.25) 30%, rgba(33, 33, 33, 0.5) 90%);
+    border-color: #b71c1c;
+    box-shadow: 0 0 15px rgba(183, 28, 28, 0.35);
+}
+
+.agent-portrait.ninomiya {
+    background-image: url('chibi/Ninomiya.jpg'), radial-gradient(circle, rgba(255, 215, 0, 0.25) 30%, rgba(245, 127, 23, 0.5) 90%);
+    border-color: #ffd700;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.35);
+}
+
+.agent-portrait.yuba {
+    background-image: url('chibi/Yuba.jpg'), radial-gradient(circle, rgba(255, 193, 7, 0.25) 30%, rgba(255, 111, 0, 0.5) 90%);
+    border-color: #ffc107;
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.35);
+}
+
 .agent-portrait.custom {
-    background-image: url('KyosukeChibi.png'), radial-gradient(circle, rgba(224, 224, 224, 0.2) 20%, rgba(66, 66, 66, 0.5) 80%);
+    background-image: url('chibi/Kyosuke.png'), radial-gradient(circle, rgba(224, 224, 224, 0.2) 20%, rgba(66, 66, 66, 0.5) 80%);
     border-color: var(--border-gray);
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
 }
@@ -1351,11 +1532,14 @@ h3,
 .bailout-box {
     width: 90%;
     max-width: 480px;
+    max-height: 85vh;
     border: 2px solid #ff3b30;
     box-shadow: 0 0 25px rgba(255, 59, 48, 0.4);
     border-radius: 8px;
-    padding: 30px;
+    padding: 25px 25px 20px 25px;
     text-align: center;
+    display: flex;
+    flex-direction: column;
 }
 
 .alert-title {
@@ -1391,12 +1575,15 @@ h3,
 .bailout-details {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     background: rgba(0, 0, 0, 0.3);
-    padding: 20px;
+    padding: 15px;
     border-radius: 6px;
     border: 1px solid var(--border-gray);
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 120px;
 }
 
 .detail-row {

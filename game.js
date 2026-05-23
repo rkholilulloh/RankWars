@@ -23,7 +23,7 @@ let isDrawingViper = false;
 
 let spiderAnchor = null; // first click coordinate for Spider Wire {x, y}
 
-let gameTime = 150 * 60; // 2 minutes 30 seconds at 60fps
+let gameTime = 300 * 60; // 5 minutes at 60fps
 let matchActive = false;
 let scoreBoard = {};
 let gameDifficulty = 'medium';
@@ -75,12 +75,24 @@ function isProjectileWeapon(name) {
 }
 
 const agentPresets = {
-    yuma: { name: "Yuma Kuga", trion: 8, attack: 9, defense: 7, mobility: 9, desc: "Neighbor with exceptional combat reflexes. Equips Scorpion for versatile close-range combat, complemented by Grasshopper maneuvers.", main: ["Scorpion", "Shield", "Grasshopper", "Empty"], sub: ["Scorpion", "Shield", "Grasshopper", "Bagworm"] },
-    osamu: { name: "Osamu Mikumo", trion: 4, attack: 4, defense: 8, mobility: 5, desc: "Tamakoma Captain. Focuses on tactical spider webs and homing Hound traps to corner opponents.", main: ["Raygust", "Asteroid", "Shield", "Empty"], sub: ["Thruster", "Spider", "Shield", "Bagworm"] },
-    chika: { name: "Chika Amatori", trion: 10, attack: 10, defense: 6, mobility: 4, desc: "Trion Monster. Deploys heavy-artillery Sniper triggers. Fires giant Ibis shots capable of blowing up map buildings.", main: ["Ibis", "Egret", "Lightning", "Shield"], sub: ["Hound", "Shield", "Bagworm", "Lead Bullet"] },
-    hyuse: { name: "Hyuse", trion: 9, attack: 8, defense: 8, mobility: 7, desc: "Aftokrator Knight. Leverages Raygust heavy shield modes and customizable Viper curves to pressure targets.", main: ["Kogetsu", "Asteroid", "Shield", "Empty"], sub: ["Senku", "Viper", "Shield", "Bagworm"] },
-    custom: { name: "Custom Agent", trion: 7, attack: 7, defense: 7, mobility: 7, desc: "Configure your own combination! Click briefcase slots above to select custom attacker, shooter, and support Triggers.", main: ["Kogetsu", "Hound", "Assault Rifle", "Shield"], sub: ["Meteora", "Viper", "Lead Bullet", "Bagworm"] }
+    yuma: { name: "Yuma Kuga", trion: 8, attack: 9, defense: 7, mobility: 9, speed: 4.2, desc: "Neighbor with exceptional combat reflexes. Equips Scorpion for versatile close-range combat, complemented by Grasshopper maneuvers.", main: ["Scorpion", "Shield", "Grasshopper", "Empty"], sub: ["Scorpion", "Shield", "Grasshopper", "Bagworm"] },
+    osamu: { name: "Osamu Mikumo", trion: 4, attack: 4, defense: 8, mobility: 5, speed: 3.2, desc: "Tamakoma Captain. Focuses on tactical spider webs and homing Hound traps to corner opponents.", main: ["Raygust", "Asteroid", "Shield", "Empty"], sub: ["Thruster", "Spider", "Shield", "Bagworm"] },
+    chika: { name: "Chika Amatori", trion: 10, attack: 10, defense: 6, mobility: 4, speed: 2.8, desc: "Trion Monster. Deploys heavy-artillery Sniper triggers. Fires giant Ibis shots capable of blowing up map buildings.", main: ["Ibis", "Egret", "Lightning", "Shield"], sub: ["Hound", "Shield", "Bagworm", "Lead Bullet"] },
+    hyuse: { name: "Hyuse", trion: 9, attack: 8, defense: 8, mobility: 7, speed: 3.6, desc: "Aftokrator Knight. Leverages Raygust heavy shield modes and customizable Viper curves to pressure targets.", main: ["Kogetsu", "Asteroid", "Shield", "Empty"], sub: ["Senku", "Viper", "Shield", "Bagworm"] },
+    arafune: { name: "Tetsuji Arafune", trion: 6, attack: 7, defense: 6, mobility: 7, speed: 3.6, desc: "Arafune Unit Captain. An All-Rounder sniper who can aggressively defend himself with Kogetsu if opponents close the distance.", main: ["Egret", "Ibis", "Kogetsu", "Shield"], sub: ["Lightning", "Senku", "Bagworm", "Shield"] },
+    kakizaki: { name: "Kuniharu Kakizaki", trion: 6, attack: 6, defense: 8, mobility: 6, speed: 3.4, desc: "Kakizaki Unit Captain. A highly disciplined defense-oriented Gunner who utilizes Assault Rifle fire behind solid Shield arrays.", main: ["Assault Rifle", "Shield", "Empty", "Empty"], sub: ["Hound", "Bagworm", "Shield", "Empty"] },
+    murakami: { name: "Ko Murakami", trion: 7, attack: 8, defense: 10, mobility: 6, speed: 3.3, desc: "Suzunari-1 Ace. Top No. 4 Attacker with a flawless shield defense. Uses Raygust Shield Mode paired with a Main-hand Kogetsu.", main: ["Kogetsu", "Raygust", "Shield", "Empty"], sub: ["Thruster", "Bagworm", "Shield", "Empty"] },
+    azuma: { name: "Haruaki Azuma", trion: 7, attack: 8, defense: 8, mobility: 6, speed: 3.2, desc: "Azuma Unit Captain. Border's first Sniper and ultimate tactician. Masters map camouflage to land devastating wall-piercing Ibis shots.", main: ["Egret", "Ibis", "Shield", "Empty"], sub: ["Lightning", "Bagworm", "Shield", "Empty"] },
+    ikoma: { name: "Tatsuhito Ikoma", trion: 7, attack: 9, defense: 6, mobility: 7, speed: 3.7, desc: "Ikoma Unit Captain. Master of the Ikoma Senku—an ultra-fast, extended-range blade slash that catches out enemies from afar.", main: ["Kogetsu", "Shield", "Empty", "Empty"], sub: ["Senku", "Bagworm", "Shield", "Empty"] },
+    katori: { name: "Yoko Katori", trion: 6, attack: 8, defense: 6, mobility: 9, speed: 4.0, desc: "Katori Unit Captain. A hyper-agile All-Rounder who uses Grasshopper to fly around the map while dual-wielding Scorpion and Handguns.", main: ["Scorpion", "Assault Rifle", "Shield", "Empty"], sub: ["Grasshopper", "Bagworm", "Shield", "Empty"] },
+    nasu: { name: "Rei Nasu", trion: 7, attack: 8, defense: 6, mobility: 8, speed: 3.8, desc: "Nasu Unit Captain. A genius Shooter who commands complex Viper bullet trajectories to bypass cover and strike from blind spots.", main: ["Viper", "Asteroid", "Shield", "Empty"], sub: ["Viper", "Bagworm", "Shield", "Empty"] },
+    suwa: { name: "Kotaro Suwa", trion: 6, attack: 7, defense: 7, mobility: 5, speed: 3.0, desc: "Suwa Unit Captain. Close-quarters Gunner who locks down choke points with a dual-shotgun setup to vaporize shields at short range.", main: ["Shotgun", "Shield", "Empty", "Empty"], sub: ["Shotgun", "Bagworm", "Shield", "Empty"] },
+    kageura: { name: "Kotaro Kageura", trion: 8, attack: 9, defense: 5, mobility: 8, speed: 3.9, desc: "Kageura Unit Captain. Top No. 1 B-Rank Attacker. Deploys whipping Scorpion blades and surprise Mole Claw strikes from the ground.", main: ["Scorpion", "Shield", "Empty", "Empty"], sub: ["Scorpion", "Mole Claw", "Bagworm", "Shield"] },
+    ninomiya: { name: "Masataka Ninomiya", trion: 9, attack: 10, defense: 7, mobility: 6, speed: 3.4, desc: "Ninomiya Unit Captain. No. 1 Shooter in Border. Overwhelms targets with massive Trion pools, spamming lethal Hornet and Gimlet fusions.", main: ["Asteroid", "Hound", "Shield", "Empty"], sub: ["Asteroid", "Hound", "Bagworm", "Shield"] },
+    yuba: { name: "Takuma Yuba", trion: 6, attack: 9, defense: 6, mobility: 8, speed: 3.8, desc: "Yuba Unit Captain. A fast-draw dual pistol Gunner specialized in 1v1 duels. Shortens projectile range for absolute bullet velocity.", main: ["Assault Rifle", "Shield", "Empty", "Empty"], sub: ["Assault Rifle", "Bagworm", "Shield", "Empty"] },
+    custom: { name: "Custom Agent", trion: 7, attack: 7, defense: 7, mobility: 7, speed: 3.5, desc: "Configure your own combination! Click briefcase slots above to select custom attacker, shooter, and support Triggers.", main: ["Kogetsu", "Hound", "Assault Rifle", "Shield"], sub: ["Meteora", "Viper", "Lead Bullet", "Bagworm"] }
 };
+window.agentPresets = agentPresets;
 
 let selectedAgent = 'yuma';
 let activeBriefcase = {
@@ -430,25 +442,54 @@ function startSimulation() {
 
     // 2. Map Configurations
     const mapSelect = document.getElementById('map-select').value;
-    let mapWidth = 1200;
-    let mapHeight = 900;
+    let mapWidth = 3200;
+    let mapHeight = 2900;
     let mapDisplayName = "Cyber Grid Map";
-    if (mapSelect === 'cityscape') {
+    let arenaType = 'cybergrid';
+
+    // Parse the map type
+    if (mapSelect.includes('cityscape')) {
+        arenaType = mapSelect.includes('large') ? 'cityscape_large' : 'cityscape';
         mapDisplayName = "Cityscape Map";
-    } else if (mapSelect === 'cityscape_large') {
-        mapWidth = 1800;
-        mapHeight = 1200;
-        mapDisplayName = "Cityscape Large";
-    } else if (mapSelect === 'forest_mountain') {
-        mapWidth = 1500;
-        mapHeight = 1000;
+    } else if (mapSelect.includes('forest')) {
+        arenaType = 'forest_mountain';
         mapDisplayName = "Forest & Mountain Map";
-    } else if (mapSelect === 'training_room') {
-        mapWidth = 1600;
-        mapHeight = 1200;
+    } else if (mapSelect.includes('training')) {
+        arenaType = 'training_room';
         mapDisplayName = "Border Training Grid";
+    } else {
+        arenaType = 'cybergrid';
+        mapDisplayName = "Cyber Grid Plain";
     }
-    arena.init(mapSelect, mapWidth, mapHeight);
+
+    // Parse the size and assign dimensions
+    if (mapSelect.includes('small')) {
+        mapWidth = 1200;
+        mapHeight = 1000;
+        mapDisplayName += " (Small)";
+    } else if (mapSelect.includes('medium')) {
+        mapWidth = 2000;
+        mapHeight = 1800;
+        mapDisplayName += " (Medium)";
+    } else {
+        // Large maps
+        if (mapSelect === 'cityscape_large') {
+            mapWidth = 3800;
+            mapHeight = 3200;
+        } else if (mapSelect.includes('forest')) {
+            mapWidth = 3500;
+            mapHeight = 3000;
+        } else if (mapSelect.includes('training')) {
+            mapWidth = 3600;
+            mapHeight = 3200;
+        } else {
+            mapWidth = 3200;
+            mapHeight = 2900;
+        }
+        mapDisplayName += " (Large)";
+    }
+
+    arena.init(arenaType, mapWidth, mapHeight);
     document.getElementById('hud-map-name').textContent = mapDisplayName;
 
     // Read Difficulty, Trion Boost and HP Boost Settings
@@ -473,13 +514,13 @@ function startSimulation() {
         vy: 0,
         radius: 18,
         angle: 0,
-        speed: selectedAgent === 'yuma' ? 4.2 : (selectedAgent === 'chika' ? 2.8 : 3.5),
+        speed: (agentPresets[selectedAgent] ? agentPresets[selectedAgent].speed : 3.5),
 
-        // Trion capacity (doubled standard capacity, multiplied by trionBoostFactor)
-        trionMax: (selectedAgent === 'chika' ? 480 : (selectedAgent === 'hyuse' ? 240 : 200)) * trionBoostFactor,
+        // Trion capacity (scaled standard capacity, multiplied by trionBoostFactor)
+        trionMax: (agentPresets[selectedAgent] ? agentPresets[selectedAgent].trion * 100 : 900) * trionBoostFactor,
         trion: 0, // Set in reset state below
-        bodyHpMax: 100 * hpBoostFactor,
-        bodyHp: 100 * hpBoostFactor,
+        bodyHpMax: 1000 * hpBoostFactor,
+        bodyHp: 1000 * hpBoostFactor,
         isLeaking: false,
         leakRate: 0,
 
@@ -580,7 +621,7 @@ function startSimulation() {
             // Active leakage if HP falls below 50%
             if (this.bodyHp < this.bodyHpMax * 0.5 && !this.isLeaking) {
                 this.isLeaking = true;
-                this.leakRate = 1; // 1 point per second passively
+                this.leakRate = 10; // 10 points per second passively
                 addLog(`[WARNING] ${this.name} Trion Body damaged below 50%! Passive Trion Leakage activated!`, 'kill');
             }
 
@@ -612,10 +653,54 @@ function startSimulation() {
         }
     };
 
+    const spawnPoints = [
+        { x: 100, y: 100 }, // Top-Left
+        { x: arena.width - 100, y: arena.height - 100 }, // Bottom-Right
+        { x: arena.width - 100, y: 100 }, // Top-Right
+        { x: 100, y: arena.height - 100 }, // Bottom-Left
+        { x: arena.width / 2, y: 100 }, // Top-Center
+        { x: arena.width / 2, y: arena.height - 100 }, // Bottom-Center
+        { x: 100, y: arena.height / 2 }, // Left-Center
+        { x: arena.width - 100, y: arena.height / 2 }, // Right-Center
+        { x: arena.width / 3, y: arena.height / 3 },
+        { x: (arena.width * 2) / 3, y: (arena.height * 2) / 3 },
+        { x: (arena.width * 2) / 3, y: arena.height / 3 },
+        { x: arena.width / 3, y: (arena.height * 2) / 3 }
+    ];
+
+    const getWalkableSpawn = (pt) => {
+        if (!arena.isWall(pt.x, pt.y)) return pt;
+        for (let radius = 30; radius < 300; radius += 30) {
+            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
+                const sx = pt.x + Math.cos(angle) * radius;
+                const sy = pt.y + Math.sin(angle) * radius;
+                if (sx > 50 && sx < arena.width - 50 && sy > 50 && sy < arena.height - 50 && !arena.isWall(sx, sy)) {
+                    return { x: sx, y: sy };
+                }
+            }
+        }
+        return pt;
+    };
+
+    // Spawn player at safe Point 0
+    const playerSpawn = getWalkableSpawn(spawnPoints[0]);
+    player.x = playerSpawn.x;
+    player.y = playerSpawn.y;
     player.trion = player.trionMax;
     player.bodyHp = player.bodyHpMax;
     player.isLeaking = false;
     player.leakRate = 0;
+
+    // Activate initial Bagworm on player if equipped
+    let playerBgwMainIdx = player.briefcase.main.indexOf('Bagworm');
+    let playerBgwSubIdx = player.briefcase.sub.indexOf('Bagworm');
+    if (playerBgwMainIdx !== -1) {
+        player.activeMainIndex = playerBgwMainIdx;
+        player.isBagwormActive = true;
+    } else if (playerBgwSubIdx !== -1) {
+        player.activeSubIndex = playerBgwSubIdx;
+        player.isBagwormActive = true;
+    }
 
     // Clear vectors
     bullets.length = 0;
@@ -626,29 +711,62 @@ function startSimulation() {
 
     // 4. Spawns Smart AI Opponents based on user selections
     const selectedRivals = [];
-    if (document.getElementById('rival-yuma').checked) selectedRivals.push({ preset: 'yuma', name: 'Yuma Kuga' });
-    if (document.getElementById('rival-osamu').checked) selectedRivals.push({ preset: 'osamu', name: 'Osamu Mikumo' });
-    if (document.getElementById('rival-chika').checked) selectedRivals.push({ preset: 'chika', name: 'Chika Amatori' });
-    if (document.getElementById('rival-hyuse').checked) selectedRivals.push({ preset: 'hyuse', name: 'Hyuse' });
+    const checkboxes = document.querySelectorAll('.rival-checkboxes-container input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            const val = cb.value;
+            const presetData = agentPresets[val];
+            if (presetData) {
+                selectedRivals.push({ preset: val, name: presetData.name });
+            }
+        }
+    });
 
     // Fallback if none checked (spawn at least Osamu Mikumo)
     if (selectedRivals.length === 0) {
         selectedRivals.push({ preset: 'osamu', name: 'Osamu Mikumo' });
     }
 
+    // Spawn Extra B-Rank Agents
+    const extraRivalsSelect = document.getElementById('extra-rivals-select');
+    const extraRivalsCount = extraRivalsSelect ? parseInt(extraRivalsSelect.value, 10) : 0;
+    const bRankPresets = ['yuma', 'osamu', 'chika', 'hyuse', 'custom'];
+    const bRankFirstNames = ['Kuruma', 'Tonoka', 'Okadera', 'Arao', 'Koarai', 'Okudera', 'Inukai', 'Tsuzuji', 'Yoneya', 'Miwa'];
+    const bRankRoles = ['Attacker', 'Shooter', 'Gunner', 'Sniper'];
+
+    for (let i = 0; i < extraRivalsCount; i++) {
+        const preset = bRankPresets[Math.floor(Math.random() * bRankPresets.length)];
+        const firstName = bRankFirstNames[Math.floor(Math.random() * bRankFirstNames.length)];
+        let role = 'Attacker';
+        if (preset === 'chika') role = 'Sniper';
+        else if (preset === 'osamu') role = 'Shooter';
+        else if (preset === 'hyuse') role = 'All-Rounder';
+        else if (preset === 'custom') role = 'Gunner';
+
+        const name = `B-Rank ${firstName} (${role})`;
+        selectedRivals.push({ preset, name });
+    }
+
     selectedRivals.forEach((rival, i) => {
         const ai = new window.AIAgent(`ai_${i}`, rival.name, rival.preset, gameDifficulty);
 
-        // Spawn AI randomly on safe grid tiles
-        for (let attempt = 0; attempt < 50; attempt++) {
-            const x = Math.random() * (arena.width - 200) + 100;
-            const y = Math.random() * (arena.height - 200) + 100;
-            if (!arena.isWall(x, y)) {
-                ai.x = x;
-                ai.y = y;
-                break;
-            }
+        // Spawn AI sequentially at distant spawn points
+        const ptIndex = (i + 1) % spawnPoints.length;
+        const aiSpawn = getWalkableSpawn(spawnPoints[ptIndex]);
+        ai.x = aiSpawn.x;
+        ai.y = aiSpawn.y;
+
+        // Activate initial Bagworm on AI if equipped
+        let aiBgwMainIdx = ai.briefcase.main.indexOf('Bagworm');
+        let aiBgwSubIdx = ai.briefcase.sub.indexOf('Bagworm');
+        if (aiBgwMainIdx !== -1) {
+            ai.activeMain = aiBgwMainIdx;
+            ai.isBagwormActive = true;
+        } else if (aiBgwSubIdx !== -1) {
+            ai.activeSub = aiBgwSubIdx;
+            ai.isBagwormActive = true;
         }
+
         allAgents.push(ai);
     });
 
@@ -659,7 +777,7 @@ function startSimulation() {
     // Setup HUD slot cards labels
     updateHUDSlotLabels();
 
-    gameTime = 150 * 60; // 2:30 at 60fps
+    gameTime = 300 * 60; // 5:00 at 60fps
     matchActive = true;
 
     // Clear status feed logs
@@ -742,8 +860,8 @@ function updatePlayerInputPhysics() {
     player.isBagwormActive = (player.briefcase.main[player.activeMainIndex] === 'Bagworm' || player.briefcase.sub[player.activeSubIndex] === 'Bagworm');
     player.isChameleonActive = (player.briefcase.main[player.activeMainIndex] === 'Chameleon' || player.briefcase.sub[player.activeSubIndex] === 'Chameleon');
 
-    if (player.isBagwormActive) player.trion -= 0.03;
-    if (player.isChameleonActive) player.trion -= 0.08;
+    if (player.isBagwormActive) player.trion -= 0.3;
+    if (player.isChameleonActive) player.trion -= 0.8;
 
     if (player.isLeaking) {
         player.bodyHp -= player.leakRate / 60;
@@ -763,7 +881,7 @@ function updatePlayerInputPhysics() {
     let inEnemySpider = false;
     for (const web of arena.spiderWebs) {
         const dist = pointToLineDistance(player.x, player.y, web.x1, web.y1, web.x2, web.y2);
-        if (dist < player.radius + 3) {
+        if (dist < player.radius + 6) { // Expanded threshold for better responsive overlap feel
             if (web.ownerId === 'player') {
                 inFriendlySpider = true;
             } else {
@@ -781,8 +899,14 @@ function updatePlayerInputPhysics() {
 
     if (inEnemySpider) {
         currentSpeed *= 0.4;
+        if (Math.random() < 0.22) {
+            spawnSparks(player.x, player.y, '#bd00ff', 2); // Purple particles for slow
+        }
     } else if (inFriendlySpider) {
-        currentSpeed *= 1.3;
+        currentSpeed *= 1.35; // Boost speed by 35%
+        if (Math.random() < 0.22) {
+            spawnSparks(player.x, player.y, '#39ff14', 2); // Green particles for speed boost
+        }
     } else if (player.isWeighted) {
         currentSpeed *= Math.max(0.15, 1 - 0.2 * player.weightStacks);
     }
@@ -922,10 +1046,13 @@ function executeTriggerAction(side) {
         }
         else if (trigName === 'Thruster') {
             window.audio.playThruster();
-            const dashSpeed = 14;
+            const dashSpeed = 22;
             player.vx = Math.cos(player.angle) * dashSpeed;
             player.vy = Math.sin(player.angle) * dashSpeed;
-            spawnSparks(player.x - Math.cos(player.angle) * 15, player.y - Math.sin(player.angle) * 15, '#00f0ff', 15);
+            player.isDashing = true;
+            player.dashTimer = 12; // 12 frames lock movement
+            player.isWeighted = false; // remove speed debuffs during launch!
+            spawnSparks(player.x - Math.cos(player.angle) * 15, player.y - Math.sin(player.angle) * 15, '#00f0ff', 20);
             player.cooldowns[cooldownRef] = config.cooldown;
         }
     }
@@ -942,13 +1069,13 @@ function executeTriggerAction(side) {
         const leadActive = hasOppositeLead && (keys['SHIFT'] || (isMain ? (activeSubTrig === 'Lead Bullet') : (activeMainTrig === 'Lead Bullet')));
 
         if (leadActive) {
-            if (player.trion < 4) {
+            if (player.trion < 40) {
                 // Refund cost already deducted
                 player.trion += config.trionCost;
-                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+4 Trion required)!", "system");
+                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+40 Trion required)!", "system");
                 return;
             }
-            player.trion -= 4;
+            player.trion -= 40;
         }
 
         // Check if dual shooter (identical active Shooter trigger in both slots)
@@ -1017,12 +1144,12 @@ function executeTriggerAction(side) {
         const leadActive = hasOppositeLead && (keys['SHIFT'] || (isMain ? (activeSubTrig === 'Lead Bullet') : (activeMainTrig === 'Lead Bullet')));
 
         if (leadActive) {
-            if (player.trion < 4) {
+            if (player.trion < 40) {
                 player.trion += config.trionCost;
-                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+4 Trion required)!", "system");
+                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+40 Trion required)!", "system");
                 return;
             }
-            player.trion -= 4;
+            player.trion -= 40;
         }
 
         bullets.push(new window.Bullet(player.x, player.y, player.angle + spread, {
@@ -1046,12 +1173,12 @@ function executeTriggerAction(side) {
         const leadActive = hasOppositeLead && (keys['SHIFT'] || (isMain ? (activeSubTrig === 'Lead Bullet') : (activeMainTrig === 'Lead Bullet')));
 
         if (leadActive) {
-            if (player.trion < 4) {
+            if (player.trion < 40) {
                 player.trion += config.trionCost;
-                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+4 Trion required)!", "system");
+                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+40 Trion required)!", "system");
                 return;
             }
-            player.trion -= 4;
+            player.trion -= 40;
         }
 
         for (let i = -2; i <= 2; i++) {
@@ -1080,12 +1207,12 @@ function executeTriggerAction(side) {
         const leadActive = hasOppositeLead && (keys['SHIFT'] || (isMain ? (activeSubTrig === 'Lead Bullet') : (activeMainTrig === 'Lead Bullet')));
 
         if (leadActive) {
-            if (player.trion < 4) {
+            if (player.trion < 40) {
                 player.trion += config.trionCost;
-                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+4 Trion required)!", "system");
+                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+40 Trion required)!", "system");
                 return;
             }
-            player.trion -= 4;
+            player.trion -= 40;
         }
 
         const ray = arena.raycast(player.x, player.y, player.x + Math.cos(player.angle) * 1500, player.y + Math.sin(player.angle) * 1500);
@@ -1152,12 +1279,12 @@ function executeTriggerAction(side) {
         const leadActive = hasOppositeLead && (keys['SHIFT'] || (isMain ? (activeSubTrig === 'Lead Bullet') : (activeMainTrig === 'Lead Bullet')));
 
         if (leadActive) {
-            if (player.trion < 4) {
+            if (player.trion < 40) {
                 player.trion += config.trionCost;
-                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+4 Trion required)!", "system");
+                addLog("[ERROR] Insufficient Trion reserves to deploy Lead Bullet (+40 Trion required)!", "system");
                 return;
             }
-            player.trion -= 4;
+            player.trion -= 40;
         }
 
         bullets.push(new window.Bullet(player.x, player.y, player.angle, {
@@ -1224,35 +1351,24 @@ function executeTriggerAction(side) {
         const worldMX = mouseX + camera.x;
         const worldMY = mouseY + camera.y;
 
-        if (arena.isWall(worldMX, worldMY)) {
-            if (!spiderAnchor) {
-                spiderAnchor = { x: worldMX, y: worldMY };
-                player.trion += config.trionCost; // First click sets anchor: refund cost
-                addLog("[TACTICAL] Spider Web anchor 1 locked. Click target cover block to anchor line...", "system");
-            } else {
-                const dist = Math.sqrt((spiderAnchor.x - worldMX) ** 2 + (spiderAnchor.y - worldMY) ** 2);
-                if (dist <= 180) {
-                    arena.spiderWebs.push({
-                        x1: spiderAnchor.x,
-                        y1: spiderAnchor.y,
-                        x2: worldMX,
-                        y2: worldMY,
-                        ownerId: 'player'
-                    });
-                    addLog("[TACTICAL] Tripwire anchored successfully!", "system");
-                    window.audio.playShieldBlock();
-                    spiderAnchor = null;
-                    player.cooldowns[cooldownRef] = config.cooldown;
-                    // Keep Trion cost deducted on successful anchor connection
-                } else {
-                    spiderAnchor = null;
-                    player.trion += config.trionCost; // Refund cost on range failure
-                    addLog("[WARNING] Anchor covers are too far away! Line length limited to 180px.", "system");
-                }
-            }
+        if (!spiderAnchor) {
+            spiderAnchor = { x: worldMX, y: worldMY };
+            player.trion += config.trionCost; // First click sets anchor: refund cost
+            addLog("[TACTICAL] Spider Web anchor 1 locked. Click anywhere to anchor connecting tripwire...", "system");
         } else {
-            player.trion += config.trionCost; // Refund cost on invalid surface
-            addLog("[WARNING] Spider anchor points must be on solid cover blocks / walls!", "system");
+            const dist = Math.sqrt((spiderAnchor.x - worldMX) ** 2 + (spiderAnchor.y - worldMY) ** 2);
+            if (dist <= 240) {
+                // Connect anywhere successfully! Call addSpiderWeb on arena
+                arena.addSpiderWeb(spiderAnchor.x, spiderAnchor.y, worldMX, worldMY, 'player');
+                addLog("[TACTICAL] Tripwire anchored successfully!", "system");
+                window.audio.playShieldBlock();
+                spiderAnchor = null;
+                player.cooldowns[cooldownRef] = config.cooldown;
+            } else {
+                spiderAnchor = null;
+                player.trion += config.trionCost; // Refund cost on range failure
+                addLog("[WARNING] Spider wire anchors too far apart! Max connection range is 240px.", "system");
+            }
         }
     }
 }
@@ -1377,7 +1493,7 @@ function fireViperWaypoints(side = 'main') {
     const leadActive = hasOppositeLead && (keys['SHIFT'] || (isMain ? (activeSubTrig === 'Lead Bullet') : (activeMainTrig === 'Lead Bullet')));
 
     // Cost check for all 5 bullets
-    let extraCost = leadActive ? 4 : 0;
+    let extraCost = leadActive ? 40 : 0;
 
     // Auto-detect dual-wielding to fire double streams
     const isDualShooter = (activeMainTrig === activeSubTrig);
@@ -1441,18 +1557,41 @@ function fireViperZigzag(side = 'main') {
     const activeMainTrig = player.briefcase.main[player.activeMainIndex];
     const activeSubTrig = player.briefcase.sub[player.activeSubIndex];
     const leadActive = hasOppositeLead && (keys['SHIFT'] || (isMain ? (activeSubTrig === 'Lead Bullet') : (activeMainTrig === 'Lead Bullet')));
-    let extraCost = leadActive ? 4 : 0;
+    let extraCost = leadActive ? 40 : 0;
 
     // Auto-detect dual-wielding to fire double streams
     const isDualShooter = (activeMainTrig === activeSubTrig);
     const fireDouble = isDualShooter;
 
-    // Generate pre-programmed zigzag waypoint patterns
-    const p1 = { x: player.x + Math.cos(player.angle - 0.5) * 80, y: player.y + Math.sin(player.angle - 0.5) * 80 };
-    const p2 = { x: player.x + Math.cos(player.angle + 0.5) * 160, y: player.y + Math.sin(player.angle + 0.5) * 160 };
-    const p3 = { x: player.x + Math.cos(player.angle) * 350, y: player.y + Math.sin(player.angle) * 350 };
-
-    const wps = [p1, p2, p3];
+    // Programmatic Viper curving trajectories with high shape variety
+    let wps = [];
+    const patternChoice = Math.floor(Math.random() * 4);
+    if (patternChoice === 0) {
+        // S-Curve
+        const p1 = { x: player.x + Math.cos(player.angle - 0.6) * 90, y: player.y + Math.sin(player.angle - 0.6) * 90 };
+        const p2 = { x: player.x + Math.cos(player.angle + 0.6) * 180, y: player.y + Math.sin(player.angle + 0.6) * 180 };
+        const p3 = { x: player.x + Math.cos(player.angle) * 350, y: player.y + Math.sin(player.angle) * 350 };
+        wps = [p1, p2, p3];
+    } else if (patternChoice === 1) {
+        // Wide Hook (sweeps out to flank the target's shield)
+        const p1 = { x: player.x + Math.cos(player.angle + 0.85) * 110, y: player.y + Math.sin(player.angle + 0.85) * 110 };
+        const p2 = { x: player.x + Math.cos(player.angle + 0.3) * 220, y: player.y + Math.sin(player.angle + 0.3) * 220 };
+        const p3 = { x: player.x + Math.cos(player.angle) * 350, y: player.y + Math.sin(player.angle) * 350 };
+        wps = [p1, p2, p3];
+    } else if (patternChoice === 2) {
+        // Deep loop
+        const p1 = { x: player.x + Math.cos(player.angle - 0.85) * 110, y: player.y + Math.sin(player.angle - 0.85) * 110 };
+        const p2 = { x: player.x + Math.cos(player.angle - 0.3) * 220, y: player.y + Math.sin(player.angle - 0.3) * 220 };
+        const p3 = { x: player.x + Math.cos(player.angle) * 350, y: player.y + Math.sin(player.angle) * 350 };
+        wps = [p1, p2, p3];
+    } else {
+        // Double sharp zigzag
+        const p1 = { x: player.x + Math.cos(player.angle - 0.7) * 80, y: player.y + Math.sin(player.angle - 0.7) * 80 };
+        const p2 = { x: player.x + Math.cos(player.angle + 0.7) * 160, y: player.y + Math.sin(player.angle + 0.7) * 160 };
+        const p3 = { x: player.x + Math.cos(player.angle - 0.4) * 250, y: player.y + Math.sin(player.angle - 0.4) * 250 };
+        const p4 = { x: player.x + Math.cos(player.angle) * 350, y: player.y + Math.sin(player.angle) * 350 };
+        wps = [p1, p2, p3, p4];
+    }
 
     for (let i = 0; i < 5; i++) {
         setTimeout(() => {
@@ -1513,22 +1652,22 @@ function executeCompositeFusion() {
 
     if (leftTrig === 'Asteroid' && rightTrig === 'Asteroid') {
         fusionType = 'gimlet';
-        trionCost = 6;
+        trionCost = 60;
     } else if ((leftTrig === 'Asteroid' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Asteroid')) {
         fusionType = 'tomahawk';
-        trionCost = 10;
+        trionCost = 100;
     } else if ((leftTrig === 'Hound' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Hound')) {
         fusionType = 'salamander';
-        trionCost = 9;
+        trionCost = 90;
     } else if ((leftTrig === 'Asteroid' && rightTrig === 'Viper') || (leftTrig === 'Viper' && rightTrig === 'Asteroid')) {
         fusionType = 'cobra';
-        trionCost = 7;
+        trionCost = 70;
     } else if (leftTrig === 'Hound' && rightTrig === 'Hound') {
         fusionType = 'hornet';
-        trionCost = 8;
+        trionCost = 80;
     } else if (leftTrig === 'Viper' && rightTrig === 'Viper') {
         fusionType = 'striker';
-        trionCost = 8;
+        trionCost = 80;
     }
 
     if (!fusionType) {
@@ -1547,7 +1686,7 @@ function executeCompositeFusion() {
         window.audio.playShoot('meteora');
         bullets.push(new window.Bullet(player.x, player.y, player.angle, {
             type: 'gimlet',
-            damage: 36,
+            damage: 360,
             speed: 13,
             ownerId: 'player',
             color: '#ffd700',
@@ -1562,7 +1701,7 @@ function executeCompositeFusion() {
         const wps = (tempViperWaypoints && tempViperWaypoints.length >= 2) ? [...tempViperWaypoints] : null;
         bullets.push(new window.Bullet(player.x, player.y, player.angle, {
             type: 'tomahawk',
-            damage: 40,
+            damage: 400,
             speed: 8,
             ownerId: 'player',
             waypoints: wps,
@@ -1577,7 +1716,7 @@ function executeCompositeFusion() {
         window.audio.playShoot('meteora');
         bullets.push(new window.Bullet(player.x, player.y, player.angle, {
             type: 'salamander',
-            damage: 38,
+            damage: 380,
             speed: 12,
             ownerId: 'player',
             color: '#ff9800',
@@ -1593,7 +1732,7 @@ function executeCompositeFusion() {
                 if (!matchActive || player.bailedOut) return;
                 bullets.push(new window.Bullet(player.x, player.y, player.angle + (Math.random() - 0.5) * 0.25, {
                     type: 'hornet',
-                    damage: 18,
+                    damage: 180,
                     speed: 9,
                     ownerId: 'player',
                     color: '#bd00ff',
@@ -1618,7 +1757,7 @@ function executeCompositeFusion() {
                 if (!matchActive || player.bailedOut) return;
                 bullets.push(new window.Bullet(player.x, player.y, player.angle, {
                     type: 'cobra',
-                    damage: 32,
+                    damage: 320,
                     speed: 11,
                     ownerId: 'player',
                     waypoints: wps,
@@ -1637,7 +1776,7 @@ function executeCompositeFusion() {
                 if (!matchActive || player.bailedOut) return;
                 bullets.push(new window.Bullet(player.x, player.y, player.angle, {
                     type: 'striker',
-                    damage: 28,
+                    damage: 280,
                     speed: 16,
                     ownerId: 'player',
                     color: '#e040fb',
@@ -1649,8 +1788,8 @@ function executeCompositeFusion() {
         }
     }
 
-    player.cooldowns.main = 800;
-    player.cooldowns.sub = 800;
+    player.cooldowns.main = 1500;
+    player.cooldowns.sub = 1500;
 }
 
 /* ==========================================================================
@@ -1674,7 +1813,11 @@ function updateProjectilesAndInteractives() {
             if (dist < agent.radius + b.size / 2) {
                 // Impact Resolution
                 const wasBailed = agent.bailedOut;
-                agent.takeDamage(b.damage, b.ownerId, b.isLeadBullet, b.type);
+                if (b.type === 'meteora' || b.type === 'tomahawk' || b.type === 'salamander') {
+                    b.triggerExplosion(arena, allAgents);
+                } else {
+                    agent.takeDamage(b.damage, b.ownerId, b.isLeadBullet, b.type);
+                }
                 b.life = 0; // Destroy projectile
                 break;
             }

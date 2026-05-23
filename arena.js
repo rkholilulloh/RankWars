@@ -43,20 +43,21 @@ class Arena {
                 if (r === 0 || r === this.rows - 1 || c === 0 || c === this.cols - 1) {
                     tile.type = 'indestructible';
                 } else {
+                    // Safe spawn checking to ensure spawn points are completely clear of buildings/trees/mountains
+                    const isNearAnySpawn = (
+                        (c <= 4 && r <= 4) || // Top-Left
+                        (c >= this.cols - 5 && r >= this.rows - 5) || // Bottom-Right
+                        (c >= this.cols - 5 && r <= 4) || // Top-Right
+                        (c <= 4 && r >= this.rows - 5) || // Bottom-Left
+                        (c >= Math.floor(this.cols/2) - 3 && c <= Math.floor(this.cols/2) + 3 && r <= 4) || // Top-Center
+                        (c >= Math.floor(this.cols/2) - 3 && c <= Math.floor(this.cols/2) + 3 && r >= this.rows - 5) || // Bottom-Center
+                        (c <= 4 && r >= Math.floor(this.rows/2) - 3 && r <= Math.floor(this.rows/2) + 3) || // Left-Center
+                        (c >= this.cols - 5 && r >= Math.floor(this.rows/2) - 3 && r <= Math.floor(this.rows/2) + 3) // Right-Center
+                    );
+
                     if (mapType === 'cityscape') {
-                        // Generate building blocks
-                        // Buildings are sets of blocks grouped together
-                        const inBuilding = (
-                            // Left skyscraper block
-                            (c >= 3 && c <= 5 && r >= 3 && r <= 6) ||
-                            // Right skyscraper block
-                            (c >= 14 && c <= 16 && r >= 8 && r <= 11) ||
-                            // Center park walls
-                            (c >= 8 && c <= 11 && r >= 3 && r <= 4) ||
-                            (c >= 8 && c <= 11 && r >= 10 && r <= 11) ||
-                            // Small cover pillars
-                            (c === 4 && r === 10) || (c === 15 && r === 4)
-                        );
+                        // Sprawling metropolitan grid blocks
+                        const inBuilding = !isNearAnySpawn && (c % 9 >= 3 && c % 9 <= 6 && r % 9 >= 3 && r % 9 <= 6);
                         
                         if (inBuilding) {
                             tile.type = 'destructible';
@@ -64,38 +65,22 @@ class Arena {
                             tile.maxHp = 120;
                         }
                     } else if (mapType === 'cityscape_large') {
-                        // Several scattered skyscraper clusters in larger field
-                        const inBuilding = (
-                            (c >= 3 && c <= 5 && r >= 3 && r <= 7) ||
-                            (c >= 24 && c <= 26 && r >= 11 && r <= 15) ||
-                            (c >= 12 && c <= 15 && r >= 4 && r <= 8) ||
-                            (c >= 9 && c <= 11 && r >= 13 && r <= 17) ||
-                            (c >= 20 && c <= 22 && r >= 3 && r <= 7) ||
-                            (c >= 17 && c <= 19 && r >= 11 && r <= 15) ||
-                            // Smaller houses or pillars
-                            (c === 7 && r === 8) || (c === 7 && r === 9) ||
-                            (c === 22 && r === 16) || (c === 22 && r === 17)
-                        );
+                        // Dense skyscraper grid blocks across a massive area
+                        const inBuilding = !isNearAnySpawn && (c % 8 >= 2 && c % 8 <= 5 && r % 8 >= 2 && r % 8 <= 5);
                         if (inBuilding) {
                             tile.type = 'destructible';
                             tile.hp = 120;
                             tile.maxHp = 120;
                         }
                     } else if (mapType === 'forest_mountain') {
-                        // Rocky ridges and green trees
-                        const isMountain = (
-                            (c >= 6 && c <= 8 && r >= 5 && r <= 8) ||
-                            (c >= 16 && c <= 18 && r >= 7 && r <= 10) ||
-                            (c >= 11 && c <= 13 && r >= 2 && r <= 4) ||
-                            (c >= 21 && c <= 23 && r >= 11 && r <= 13)
-                        );
+                        // Sprawling rocky ridges and organic trees
+                        const isMountain = !isNearAnySpawn && (c % 12 >= 5 && c % 12 <= 8 && r % 10 >= 4 && r % 10 <= 7);
                         if (isMountain) {
                             tile.type = 'indestructible';
                             tile.isMountainRock = true;
                         } else {
-                            // Organic trees scattered (avoiding corners where players spawn)
-                            const isNearSpawn = (c <= 4 && r <= 4) || (c >= this.cols - 5 && r >= this.rows - 5);
-                            if (!isNearSpawn && Math.random() < 0.16) {
+                            // Organic trees scattered outside spawning areas
+                            if (!isNearAnySpawn && Math.random() < 0.16) {
                                 tile.type = 'destructible';
                                 tile.hp = 80; // Trees have lower HP
                                 tile.maxHp = 80;
@@ -294,6 +279,48 @@ class Arena {
         }
     }
 
+    addSpiderWeb(x1, y1, x2, y2, ownerId) {
+        // Push primary wire segment
+        this.spiderWebs.push({ x1, y1, x2, y2, ownerId, isAutoConnected: false });
+
+        // Holographic auto-connection distance
+        const connectDist = 220;
+        const newPts = [{x: x1, y: y1}, {x: x2, y: y2}];
+
+        // Sweep existing webs of the same owner
+        const existingPts = [];
+        for (const web of this.spiderWebs) {
+            if (web.ownerId === ownerId && !(web.x1 === x1 && web.y1 === y1 && web.x2 === x2 && web.y2 === y2)) {
+                existingPts.push({x: web.x1, y: web.y1});
+                existingPts.push({x: web.x2, y: web.y2});
+            }
+        }
+
+        // Draw cross-connecting holographic wires between nearby endpoints
+        for (const newPt of newPts) {
+            for (const extPt of existingPts) {
+                const dist = Math.sqrt((newPt.x - extPt.x) ** 2 + (newPt.y - extPt.y) ** 2);
+                if (dist > 5 && dist < connectDist) {
+                    const alreadyConnected = this.spiderWebs.some(w => 
+                        w.ownerId === ownerId && 
+                        ((w.x1 === newPt.x && w.y1 === newPt.y && w.x2 === extPt.x && w.y2 === extPt.y) ||
+                         (w.x1 === extPt.x && w.y1 === extPt.y && w.x2 === newPt.x && w.y2 === newPt.y))
+                    );
+                    if (!alreadyConnected) {
+                        this.spiderWebs.push({
+                            x1: newPt.x,
+                            y1: newPt.y,
+                            x2: extPt.x,
+                            y2: extPt.y,
+                            ownerId: ownerId,
+                            isAutoConnected: true
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     draw(ctx) {
         // Draw grid floor lines background
         ctx.strokeStyle = (this.mapType === 'cityscape' || this.mapType === 'cityscape_large') ? 'rgba(255,255,255,0.015)' : (this.mapType === 'forest_mountain' ? 'rgba(46, 125, 50, 0.02)' : 'rgba(0, 240, 255, 0.02)');
@@ -425,12 +452,20 @@ class Arena {
 
         // Draw active Spider Web wires (purple lines)
         ctx.save();
-        ctx.strokeStyle = 'rgba(189, 0, 255, 0.6)';
-        ctx.lineWidth = 2.5;
         ctx.shadowBlur = 8;
         ctx.shadowColor = '#bd00ff';
         
         for (const web of this.spiderWebs) {
+            if (web.isAutoConnected) {
+                ctx.strokeStyle = 'rgba(189, 0, 255, 0.45)';
+                ctx.lineWidth = 1.2;
+                ctx.setLineDash([4, 4]); // Dashed connection for holographic mesh lines
+            } else {
+                ctx.strokeStyle = 'rgba(189, 0, 255, 0.75)';
+                ctx.lineWidth = 2.4;
+                ctx.setLineDash([]); // Solid border primary lines
+            }
+
             ctx.beginPath();
             ctx.moveTo(web.x1, web.y1);
             ctx.lineTo(web.x2, web.y2);
@@ -439,8 +474,8 @@ class Arena {
             // Draw tiny attachment node circles
             ctx.fillStyle = '#bd00ff';
             ctx.beginPath();
-            ctx.arc(web.x1, web.y1, 3, 0, Math.PI*2);
-            ctx.arc(web.x2, web.y2, 3, 0, Math.PI*2);
+            ctx.arc(web.x1, web.y1, web.isAutoConnected ? 1.5 : 3.2, 0, Math.PI*2);
+            ctx.arc(web.x2, web.y2, web.isAutoConnected ? 1.5 : 3.2, 0, Math.PI*2);
             ctx.fill();
         }
         ctx.restore();
