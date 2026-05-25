@@ -12,6 +12,65 @@ let arena = null;
 const allAgents = [];
 let player = null;
 const camera = { x: 0, y: 0, width: 900, height: 600 };
+let cameraZoom = 1.0;
+
+function getWorldMouse() {
+    if (player && cameraZoom !== 1.0) {
+        return {
+            x: player.x + (mouseX - canvas.width / 2) / cameraZoom,
+            y: player.y + (mouseY - canvas.height / 2) / cameraZoom
+        };
+    } else {
+        return {
+            x: mouseX + camera.x,
+            y: mouseY + camera.y
+        };
+    }
+}
+
+function cutSpiderWebsInArc(agent, range) {
+    if (!arena || !arena.spiderWebs) return;
+
+    for (let i = arena.spiderWebs.length - 1; i >= 0; i--) {
+        const web = arena.spiderWebs[i];
+        if (web.ownerId === agent.id) continue; // Only cut ENEMY webs!
+
+        // Short-circuit check if segment is completely out of range
+        const minDist = pointToLineDistance(agent.x, agent.y, web.x1, web.y1, web.x2, web.y2);
+        if (minDist > range) continue;
+
+        // Sample 11 points along the segment to check intersection
+        for (let t = 0; t <= 1; t += 0.1) {
+            const sx = web.x1 + t * (web.x2 - web.x1);
+            const sy = web.y1 + t * (web.y2 - web.y1);
+
+            const dx = sx - agent.x;
+            const dy = sy - agent.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist <= range) {
+                const targetAngle = Math.atan2(dy, dx);
+                let angleDiff = targetAngle - agent.angle;
+                angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+
+                const slashSweep = (80 * Math.PI) / 180;
+                if (Math.abs(angleDiff) <= slashSweep / 2) {
+                    // Severed!
+                    if (window.spawnSparks) {
+                        window.spawnSparks(sx, sy, '#bd00ff', 12);
+                    }
+                    if (typeof addLog !== 'undefined') {
+                        const cutterName = agent.id === 'player' ? 'Your' : `${agent.name}'s`;
+                        addLog(`[TACTICAL] ${cutterName} blade severed an enemy tripwire!`, 'system');
+                    }
+                    arena.spiderWebs.splice(i, 1);
+                    break;
+                }
+            }
+        }
+    }
+}
+window.cutSpiderWebsInArc = cutSpiderWebsInArc;
 
 const bullets = [];
 const grPads = [];
@@ -108,32 +167,61 @@ function setupAgentSelectors() {
             card.classList.add('active');
 
             selectedAgent = card.getAttribute('data-agent');
-            const data = agentPresets[selectedAgent];
-
-            // Update Stats Display
-            const portrait = document.getElementById('agent-stats-portrait');
-            if (portrait) {
-                portrait.className = `agent-portrait ${selectedAgent} animate-glow`;
-            }
-
-            document.getElementById('stat-trion').style.width = `${data.trion * 10}%`;
-            document.getElementById('stat-trion-val').textContent = data.trion;
-            document.getElementById('stat-attack').style.width = `${data.attack * 10}%`;
-            document.getElementById('stat-attack-val').textContent = data.attack;
-            document.getElementById('stat-defense').style.width = `${data.defense * 10}%`;
-            document.getElementById('stat-defense-val').textContent = data.defense;
-            document.getElementById('stat-mobility').style.width = `${data.mobility * 10}%`;
-            document.getElementById('stat-mobility-val').textContent = data.mobility;
-
-            document.getElementById('agent-description').textContent = data.desc;
+            updateStatsDisplay();
 
             // Load Default Briefcase for Preset
+            const data = agentPresets[selectedAgent];
             activeBriefcase.main = [...data.main];
             activeBriefcase.sub = [...data.sub];
             renderBriefcaseHTML();
         });
     });
 }
+
+function updateStatsDisplay() {
+    const data = agentPresets[selectedAgent];
+    if (!data) return;
+
+    // Update Stats Display
+    const portrait = document.getElementById('agent-stats-portrait');
+    if (portrait) {
+        portrait.className = `agent-portrait ${selectedAgent} animate-glow`;
+    }
+
+    document.getElementById('stat-trion').style.width = `${Math.min(10, data.trion) * 10}%`;
+    document.getElementById('stat-attack').style.width = `${Math.min(10, data.attack) * 10}%`;
+    document.getElementById('stat-defense').style.width = `${Math.min(10, data.defense) * 10}%`;
+    document.getElementById('stat-mobility').style.width = `${Math.min(10, data.mobility) * 10}%`;
+
+    if (selectedAgent === 'custom') {
+        document.getElementById('stat-trion-val').innerHTML = `<button class="stat-btn" onclick="adjustCustomStat('trion', -1)">-</button> <span class="stat-num">${data.trion}</span> <button class="stat-btn" onclick="adjustCustomStat('trion', 1)">+</button>`;
+        document.getElementById('stat-attack-val').innerHTML = `<button class="stat-btn" onclick="adjustCustomStat('attack', -1)">-</button> <span class="stat-num">${data.attack}</span> <button class="stat-btn" onclick="adjustCustomStat('attack', 1)">+</button>`;
+        document.getElementById('stat-defense-val').innerHTML = `<button class="stat-btn" onclick="adjustCustomStat('defense', -1)">-</button> <span class="stat-num">${data.defense}</span> <button class="stat-btn" onclick="adjustCustomStat('defense', 1)">+</button>`;
+        document.getElementById('stat-mobility-val').innerHTML = `<button class="stat-btn" onclick="adjustCustomStat('mobility', -1)">-</button> <span class="stat-num">${data.mobility}</span> <button class="stat-btn" onclick="adjustCustomStat('mobility', 1)">+</button>`;
+    } else {
+        document.getElementById('stat-trion-val').textContent = data.trion;
+        document.getElementById('stat-attack-val').textContent = data.attack;
+        document.getElementById('stat-defense-val').textContent = data.defense;
+        document.getElementById('stat-mobility-val').textContent = data.mobility;
+    }
+
+    document.getElementById('agent-description').textContent = data.desc;
+}
+
+window.adjustCustomStat = function (stat, amount) {
+    const data = agentPresets.custom;
+    if (!data) return;
+
+    data[stat] = Math.max(1, Math.min(10, data[stat] + amount));
+
+    // Update speed based on mobility
+    if (stat === 'mobility') {
+        data.speed = 2.0 + (data.mobility * 0.22); // dynamic speed formula: mobility 7 = 3.54 speed
+    }
+
+    // Refresh display
+    updateStatsDisplay();
+};
 
 function renderBriefcaseHTML() {
     const mainSlots = document.querySelectorAll('.main-hand .slot-item');
@@ -398,7 +486,8 @@ function setupMouseListeners() {
             const activeTrig = player.briefcase.main[player.activeMainIndex];
             if (activeTrig === 'Viper') {
                 isDrawingViper = true;
-                tempViperWaypoints = [{ x: mouseX + camera.x, y: mouseY + camera.y }];
+                const wm = getWorldMouse();
+                tempViperWaypoints = [{ x: wm.x, y: wm.y }];
             }
         }
         if (e.button === 2) isRightMouseDown = true;
@@ -417,18 +506,29 @@ function setupMouseListeners() {
         if (e.button === 2) isRightMouseDown = false;
     });
 
-    // Resize active green shield arc using scroll wheel
+    // Resize camera using scroll wheel for snipers
     canvas.addEventListener('wheel', (e) => {
         if (!matchActive || !player) return;
         e.preventDefault();
 
-        // Adjust angle bounds between 30 and 360 degrees
-        const direction = e.deltaY > 0 ? 1 : -1;
-        player.shieldAngle = Math.max(30, Math.min(360, player.shieldAngle + direction * 15));
+        const activeMainTrig = player.briefcase.main[player.activeMainIndex];
+        const isHoldingSniper = (activeMainTrig === 'Egret' || activeMainTrig === 'Ibis' || activeMainTrig === 'Lightning');
+
+        if (isHoldingSniper) {
+            // Adjust camera zoom: scroll down (deltaY > 0) to zoom out, scroll up (deltaY < 0) to zoom in
+            const direction = e.deltaY > 0 ? -1 : 1;
+            cameraZoom = Math.max(0.45, Math.min(1.0, cameraZoom + direction * 0.05));
+        }
     });
 
     // Disable context menu on canvas so right clicks work properly
     canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    // Disable context menu on bailout screen so right clicks don't bring up browser overlay
+    const bailoutScreen = document.getElementById('bailout-screen');
+    if (bailoutScreen) {
+        bailoutScreen.addEventListener('contextmenu', e => e.preventDefault());
+    }
 }
 
 /* ==========================================================================
@@ -528,6 +628,7 @@ function startSimulation() {
         weightStacks: 0,
         isDashing: false,
         dashTimer: 0,
+        stunTimer: 0, // Initialize stunTimer for Gimlet stuns
 
         // active briefcase setup slots indices
         briefcase: {
@@ -571,8 +672,22 @@ function startSimulation() {
             }
 
             // Check if Full Shield is active
-            const mainShieldActive = !this.isChameleonActive && (this.briefcase.main[this.activeMainIndex] === 'Shield' && isLeftMouseDown) && this.trion > 0;
-            const subShieldActive = !this.isChameleonActive && (this.briefcase.sub[this.activeSubIndex] === 'Shield' && isRightMouseDown) && this.trion > 0;
+            const hasShieldMain = this.briefcase.main[this.activeMainIndex] === 'Shield';
+            const hasShieldSub = this.briefcase.sub[this.activeSubIndex] === 'Shield';
+            const bothAreShield = hasShieldMain && hasShieldSub;
+
+            let mainShieldActive = false;
+            let subShieldActive = false;
+
+            if (bothAreShield) {
+                const eitherPressed = isLeftMouseDown || isRightMouseDown;
+                mainShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
+                subShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
+            } else {
+                mainShieldActive = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.trion > 0;
+                subShieldActive = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.trion > 0;
+            }
+
             const isFullShield = mainShieldActive && subShieldActive;
 
             // Normal Hit checks shield block direction (Gimlet is blocked only by Full Shield!)
@@ -581,8 +696,8 @@ function startSimulation() {
 
             if (isBlocked && (!isGimlet || isFullShield)) {
                 if (isFullShield) {
-                    // Full Shield holds! Only drain 2% of the damage as Trion cost
-                    this.trion -= amount * 0.02;
+                    // Full Shield holds! Only drain 8% of the damage as Trion cost
+                    this.trion -= amount * 0.08;
                     window.audio.playShieldBlock();
                     // Golden sparks for Full Shield
                     spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ffd700', 16);
@@ -590,8 +705,8 @@ function startSimulation() {
                         addLog("[TACTICAL] Full Shield successfully blocked Gimlet!", "system");
                     }
                 } else {
-                    // Standard Shield holds! Completely block damage to Trion HP body, charge 8% Trion cost
-                    this.trion -= amount * 0.08;
+                    // Standard Shield holds! Completely block damage to Trion HP body, charge 25% Trion cost
+                    this.trion -= amount * 0.25;
                     window.audio.playShieldBlock();
                     // Green sparks for standard Shield
                     spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#39ff14', 12);
@@ -618,6 +733,12 @@ function startSimulation() {
             }
             spawnSparks(this.x, this.y, '#ff3b30', 8);
 
+            // Gimlet stuns!
+            if (bulletType === 'gimlet') {
+                this.stunTimer = 20; // 20 frames stun!
+                addLog(`[SYSTEM] ${this.name} is STUNNED by high-penetration Gimlet!`, 'system');
+            }
+
             // Active leakage if HP falls below 50%
             if (this.bodyHp < this.bodyHpMax * 0.5 && !this.isLeaking) {
                 this.isLeaking = true;
@@ -633,8 +754,22 @@ function startSimulation() {
 
         isBlockingAngle(attackerId) {
             if (this.trion <= 0) return false;
-            const mainShield = !this.isChameleonActive && (this.briefcase.main[this.activeMainIndex] === 'Shield' && isLeftMouseDown);
-            const subShield = !this.isChameleonActive && (this.briefcase.sub[this.activeSubIndex] === 'Shield' && isRightMouseDown);
+            const hasShieldMain = this.briefcase.main[this.activeMainIndex] === 'Shield';
+            const hasShieldSub = this.briefcase.sub[this.activeSubIndex] === 'Shield';
+            const bothAreShield = hasShieldMain && hasShieldSub;
+
+            let mainShield = false;
+            let subShield = false;
+
+            if (bothAreShield) {
+                const eitherPressed = isLeftMouseDown || isRightMouseDown;
+                mainShield = !this.isChameleonActive && eitherPressed;
+                subShield = !this.isChameleonActive && eitherPressed;
+            } else {
+                mainShield = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown);
+                subShield = !this.isChameleonActive && (hasShieldSub && isRightMouseDown);
+            }
+
             if (!mainShield && !subShield) return false;
 
             // Find attacker
@@ -646,8 +781,8 @@ function startSimulation() {
             // Normalize
             angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
-            // Full Shield provides a broad 150-degree dome coverage!
-            const currentShieldAngle = (mainShield && subShield) ? 150 : this.shieldAngle;
+            // Full Shield provides a complete 360-degree coverage!
+            const currentShieldAngle = (mainShield && subShield) ? 360 : 90;
             const shieldRad = (currentShieldAngle * Math.PI) / 360; // half angle bounds
             return Math.abs(angleDiff) <= shieldRad;
         }
@@ -847,8 +982,6 @@ function updateTimer() {
     const s = (totalSecs % 60).toString().padStart(2, '0');
     document.getElementById('game-timer').textContent = `${m}:${s}`;
 }
-
-// Player control vector physics updates
 function updatePlayerInputPhysics() {
     if (player.bailedOut) return;
 
@@ -856,12 +989,28 @@ function updatePlayerInputPhysics() {
     if (player.cooldowns.main > 0) player.cooldowns.main -= 16.67;
     if (player.cooldowns.sub > 0) player.cooldowns.sub -= 16.67;
 
+    // Reset zoom when not holding a sniper
+    const activeMainTrig = player.briefcase.main[player.activeMainIndex];
+    const isHoldingSniper = (activeMainTrig === 'Egret' || activeMainTrig === 'Ibis' || activeMainTrig === 'Lightning');
+    if (!isHoldingSniper) {
+        cameraZoom = 1.0;
+    }
+
     // Passive Trion drain
     player.isBagwormActive = (player.briefcase.main[player.activeMainIndex] === 'Bagworm' || player.briefcase.sub[player.activeSubIndex] === 'Bagworm');
     player.isChameleonActive = (player.briefcase.main[player.activeMainIndex] === 'Chameleon' || player.briefcase.sub[player.activeSubIndex] === 'Chameleon');
 
     if (player.isBagwormActive) player.trion -= 0.3;
     if (player.isChameleonActive) player.trion -= 0.8;
+
+    // Active Shield passive drain
+    const mainShieldActive = !player.isChameleonActive && (player.briefcase.main[player.activeMainIndex] === 'Shield' && isLeftMouseDown) && player.trion > 0;
+    const subShieldActive = !player.isChameleonActive && (player.briefcase.sub[player.activeSubIndex] === 'Shield' && isRightMouseDown) && player.trion > 0;
+    if (mainShieldActive && subShieldActive) {
+        player.trion -= 1.0; // Passive consumption for Full Shield
+    } else if (mainShieldActive || subShieldActive) {
+        player.trion -= 0.5; // Passive consumption for Standard Shield
+    }
 
     if (player.isLeaking) {
         player.bodyHp -= player.leakRate / 60;
@@ -897,6 +1046,29 @@ function updatePlayerInputPhysics() {
         currentSpeed *= 1.15;
     }
 
+    // Apply movement speed penalty if shielding
+    const hasShieldMain = player.briefcase.main[player.activeMainIndex] === 'Shield';
+    const hasShieldSub = player.briefcase.sub[player.activeSubIndex] === 'Shield';
+    const bothAreShield = hasShieldMain && hasShieldSub;
+
+    let mainShield = false;
+    let subShield = false;
+
+    if (bothAreShield) {
+        const eitherPressed = isLeftMouseDown || isRightMouseDown;
+        mainShield = !player.isChameleonActive && eitherPressed && player.trion > 0;
+        subShield = !player.isChameleonActive && eitherPressed && player.trion > 0;
+    } else {
+        mainShield = !player.isChameleonActive && (hasShieldMain && isLeftMouseDown) && player.trion > 0;
+        subShield = !player.isChameleonActive && (hasShieldSub && isRightMouseDown) && player.trion > 0;
+    }
+
+    if (mainShield && subShield) {
+        currentSpeed *= 0.60; // 40% speed penalty for Full Shield
+    } else if (mainShield || subShield) {
+        currentSpeed *= 0.80; // 20% speed penalty for Standard Shield
+    }
+
     if (inEnemySpider) {
         currentSpeed *= 0.4;
         if (Math.random() < 0.22) {
@@ -911,50 +1083,60 @@ function updatePlayerInputPhysics() {
         currentSpeed *= Math.max(0.15, 1 - 0.2 * player.weightStacks);
     }
 
-    if (player.isDashing) {
-        player.vx *= 0.92;
-        player.vy *= 0.92;
-        player.dashTimer--;
-        if (player.dashTimer <= 0) {
-            player.isDashing = false;
+    if (player.stunTimer && player.stunTimer > 0) {
+        player.stunTimer--;
+        player.vx = 0;
+        player.vy = 0;
+        if (Math.random() < 0.35 && window.spawnSparks) {
+            window.spawnSparks(player.x, player.y, '#ffd700', 3); // Gold sparks for stun
         }
     } else {
-        // Input checks
-        let dx = 0;
-        let dy = 0;
-        if (keys['W']) dy = -1;
-        if (keys['S']) dy = 1;
-        if (keys['A']) dx = -1;
-        if (keys['D']) dx = 1;
+        if (player.isDashing) {
+            player.vx *= 0.92;
+            player.vy *= 0.92;
+            player.dashTimer--;
+            if (player.dashTimer <= 0) {
+                player.isDashing = false;
+            }
+        } else {
+            // Input checks
+            let dx = 0;
+            let dy = 0;
+            if (keys['W']) dy = -1;
+            if (keys['S']) dy = 1;
+            if (keys['A']) dx = -1;
+            if (keys['D']) dx = 1;
 
-        // Move velocities
-        if (dx !== 0 && dy !== 0) {
-            // scale diagonals vectors
-            dx *= 0.707;
-            dy *= 0.707;
+            // Move velocities
+            if (dx !== 0 && dy !== 0) {
+                // scale diagonals vectors
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+
+            player.vx = dx * currentSpeed;
+            player.vy = dy * currentSpeed;
         }
 
-        player.vx = dx * currentSpeed;
-        player.vy = dy * currentSpeed;
-    }
+        // Facing angles aim matches cursor world coordinates
+        const worldMouse = getWorldMouse();
+        player.angle = Math.atan2(worldMouse.y - player.y, worldMouse.x - player.x);
 
-    // Facing angles aim matches cursor world coordinates
-    player.angle = Math.atan2((mouseY + camera.y) - player.y, (mouseX + camera.x) - player.x);
+        // Dynamic execution of Left click active Main slot Trigger
+        // Block trigger usage when trion is depleted
+        if (player.trion > 0 && isLeftMouseDown && player.cooldowns.main <= 0) {
+            executeTriggerAction('main');
+        }
 
-    // Dynamic execution of Left click active Main slot Trigger
-    // Block trigger usage when trion is depleted
-    if (player.trion > 0 && isLeftMouseDown && player.cooldowns.main <= 0) {
-        executeTriggerAction('main');
-    }
+        // Dynamic execution of Right click active Sub slot Trigger
+        if (player.trion > 0 && isRightMouseDown && player.cooldowns.sub <= 0) {
+            executeTriggerAction('sub');
+        }
 
-    // Dynamic execution of Right click active Sub slot Trigger
-    if (player.trion > 0 && isRightMouseDown && player.cooldowns.sub <= 0) {
-        executeTriggerAction('sub');
-    }
-
-    // Composite Bullet fusion check (Keys Shift + Spacebar)
-    if (player.trion > 0 && keys[' '] && player.cooldowns.main <= 0 && player.cooldowns.sub <= 0) {
-        executeCompositeFusion();
+        // Composite Bullet fusion check (Keys Shift + Spacebar)
+        if (player.trion > 0 && keys[' '] && player.cooldowns.main <= 0 && player.cooldowns.sub <= 0) {
+            executeCompositeFusion();
+        }
     }
 
     // Apply movement updates
@@ -980,7 +1162,7 @@ function executeTriggerAction(side) {
     const index = isMain ? player.activeMainIndex : player.activeSubIndex;
     const trigName = isMain ? player.briefcase.main[index] : player.briefcase.sub[index];
 
-    if (trigName === "Empty" || trigName === "Bagworm" || trigName === "Chameleon" || trigName === "Shield") return;
+    if (trigName === "Empty" || trigName === "Bagworm" || trigName === "Chameleon" || trigName === "Shield" || trigName === "Lead Bullet") return;
 
     const config = window.TRIGGER_CATALOG[trigName];
     if (!config) return;
@@ -1304,12 +1486,13 @@ function executeTriggerAction(side) {
     // 🛡️ MOBILE & SUPPORT TRIGGERS (Grasshopper, Teleporter, Spider)
     else if (trigName === 'Grasshopper') {
         const maxRadius = 120;
-        const dx = (mouseX + camera.x) - player.x;
-        const dy = (mouseY + camera.y) - player.y;
+        const wm = getWorldMouse();
+        const dx = wm.x - player.x;
+        const dy = wm.y - player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        let padX = mouseX + camera.x;
-        let padY = mouseY + camera.y;
+        let padX = wm.x;
+        let padY = wm.y;
         if (dist > maxRadius) {
             padX = player.x + (dx / dist) * maxRadius;
             padY = player.y + (dy / dist) * maxRadius;
@@ -1321,12 +1504,13 @@ function executeTriggerAction(side) {
     }
     else if (trigName === 'Teleporter') {
         const maxRadius = 200;
-        const dx = (mouseX + camera.x) - player.x;
-        const dy = (mouseY + camera.y) - player.y;
+        const wm = getWorldMouse();
+        const dx = wm.x - player.x;
+        const dy = wm.y - player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        let destX = mouseX + camera.x;
-        let destY = mouseY + camera.y;
+        let destX = wm.x;
+        let destY = wm.y;
         if (dist > maxRadius) {
             destX = player.x + (dx / dist) * maxRadius;
             destY = player.y + (dy / dist) * maxRadius;
@@ -1348,13 +1532,23 @@ function executeTriggerAction(side) {
         }
     }
     else if (trigName === 'Spider') {
-        const worldMX = mouseX + camera.x;
-        const worldMY = mouseY + camera.y;
+        const wm = getWorldMouse();
+        const worldMX = wm.x;
+        const worldMY = wm.y;
+
+        // Check if placement is within 280px radius of player
+        const distFromPlayer = Math.sqrt((player.x - worldMX) ** 2 + (player.y - worldMY) ** 2);
+        if (distFromPlayer > 280) {
+            player.trion += config.trionCost; // Refund cost
+            spiderAnchor = null;
+            addLog("[WARNING] Spider wire must be placed within 280px of your character!", "system");
+            return;
+        }
 
         if (!spiderAnchor) {
             spiderAnchor = { x: worldMX, y: worldMY };
             player.trion += config.trionCost; // First click sets anchor: refund cost
-            addLog("[TACTICAL] Spider Web anchor 1 locked. Click anywhere to anchor connecting tripwire...", "system");
+            addLog("[TACTICAL] Spider Web anchor 1 locked. Click anywhere within 280px to anchor connecting tripwire...", "system");
         } else {
             const dist = Math.sqrt((spiderAnchor.x - worldMX) ** 2 + (spiderAnchor.y - worldMY) ** 2);
             if (dist <= 240) {
@@ -1424,12 +1618,16 @@ function performBladeSlash(damage, range, color, isGenyo = false, isSenku = fals
             }
         }
     }
+
+    // Cut enemy spider webs that intersect the slash arc
+    cutSpiderWebsInArc(player, slashArc.range);
 }
 
 function performMoleClawStrike(damage) {
     // Left click location in world coordinates
-    const strikeX = mouseX + camera.x;
-    const strikeY = mouseY + camera.y;
+    const wm = getWorldMouse();
+    const strikeX = wm.x;
+    const strikeY = wm.y;
     const maxRadius = 160;
 
     const dx = strikeX - player.x;
@@ -1467,13 +1665,20 @@ function performMoleClawStrike(damage) {
 
 // Viper customizable path functions
 function fireViperWaypoints(side = 'main') {
+    const viperConfig = window.TRIGGER_CATALOG["Viper"];
     if (tempViperWaypoints.length < 2) {
+        if (player.trion < viperConfig.trionCost) {
+            addLog("[ERROR] Insufficient Trion reserves to deploy Viper!", "system");
+            tempViperWaypoints = [];
+            return;
+        }
+        player.trion -= viperConfig.trionCost;
+        fireViperZigzag(side);
         tempViperWaypoints = [];
         return;
     }
 
     // Deduct base Viper trion cost exactly once on launch
-    const viperConfig = window.TRIGGER_CATALOG["Viper"];
     if (player.trion < viperConfig.trionCost) {
         addLog("[ERROR] Insufficient Trion reserves to deploy Viper waypoints!", "system");
         tempViperWaypoints = [];
@@ -1666,12 +1871,12 @@ function executeCompositeFusion() {
         fusionType = 'hornet';
         trionCost = 80;
     } else if (leftTrig === 'Viper' && rightTrig === 'Viper') {
-        fusionType = 'striker';
-        trionCost = 80;
+        // fusionType = 'striker';
+        // trionCost = 80;
     }
 
     if (!fusionType) {
-        addLog("[WARNING] No valid composite fusion combination equipped/selected! Combinations: Asteroid+Asteroid (Gimlet), Asteroid+Meteora (Tomahawk), Hound+Meteora (Salamander), Asteroid+Viper (Cobra), Hound+Hound (Hornet), Viper+Viper (Striker)", "system");
+        addLog("[WARNING] No valid composite fusion combination equipped/selected! Combinations: Asteroid+Asteroid (Gimlet), Asteroid+Meteora (Tomahawk), Hound+Meteora (Salamander), Asteroid+Viper (Cobra), Hound+Hound (Hornet)", "system");
         return;
     }
 
@@ -2013,7 +2218,15 @@ function renderArenaCanvas() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    ctx.translate(-camera.x, -camera.y);
+    if (player && cameraZoom !== 1.0) {
+        // Zoom centered on the player
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(cameraZoom, cameraZoom);
+        ctx.translate(-player.x, -player.y);
+    } else {
+        // Standard clamped camera view
+        ctx.translate(-camera.x, -camera.y);
+    }
 
     // 1. Draw floor grids map tiles
     arena.draw(ctx);
@@ -2039,7 +2252,8 @@ function renderArenaCanvas() {
 
         // Check and track dragging mouse points
         if (tempViperWaypoints.length < 50) { // Limit waypoint complexity
-            tempViperWaypoints.push({ x: mouseX + camera.x, y: mouseY + camera.y });
+            const wm = getWorldMouse();
+            tempViperWaypoints.push({ x: wm.x, y: wm.y });
         }
     }
 
@@ -2051,9 +2265,28 @@ function renderArenaCanvas() {
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
         ctx.moveTo(spiderAnchor.x, spiderAnchor.y);
-        ctx.lineTo(mouseX + camera.x, mouseY + camera.y);
+        const wm = getWorldMouse();
+        ctx.lineTo(wm.x, wm.y);
         ctx.stroke();
         ctx.restore();
+    }
+
+    // Draw Spider placement limit circle when Spider is active
+    if (player && !player.bailedOut) {
+        const activeMain = player.briefcase.main[player.activeMainIndex];
+        const activeSub = player.briefcase.sub[player.activeSubIndex];
+        if (activeMain === 'Spider' || activeSub === 'Spider') {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(189, 0, 255, 0.22)';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([6, 6]);
+            ctx.beginPath();
+            ctx.arc(player.x, player.y, 280, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(189, 0, 255, 0.02)';
+            ctx.fill();
+            ctx.restore();
+        }
     }
 
     // 5. Draw Projectiles Bullets
@@ -2122,17 +2355,33 @@ function drawPlayerCharacter() {
     ctx.closePath();
     ctx.fill();
 
-    // Draw active green Shield arc if blocking (holding main or sub hand shield click)
-    const mainShieldActive = (player.briefcase.main[player.activeMainIndex] === 'Shield' && isLeftMouseDown) && player.trion > 0;
-    const subShieldActive = (player.briefcase.sub[player.activeSubIndex] === 'Shield' && isRightMouseDown) && player.trion > 0;
-    if (mainShieldActive || subShieldActive) {
+    // Draw active green/cyan Shield arc if blocking
+    const hasShieldMain = player.briefcase.main[player.activeMainIndex] === 'Shield';
+    const hasShieldSub = player.briefcase.sub[player.activeSubIndex] === 'Shield';
+    const bothAreShield = hasShieldMain && hasShieldSub;
+
+    let mainShieldActiveDraw = false;
+    let subShieldActiveDraw = false;
+
+    if (bothAreShield) {
+        const eitherPressed = isLeftMouseDown || isRightMouseDown;
+        mainShieldActiveDraw = !player.isChameleonActive && eitherPressed && player.trion > 0;
+        subShieldActiveDraw = !player.isChameleonActive && eitherPressed && player.trion > 0;
+    } else {
+        mainShieldActiveDraw = !player.isChameleonActive && (hasShieldMain && isLeftMouseDown) && player.trion > 0;
+        subShieldActiveDraw = !player.isChameleonActive && (hasShieldSub && isRightMouseDown) && player.trion > 0;
+    }
+
+    if (mainShieldActiveDraw || subShieldActiveDraw) {
         ctx.save();
+        const isFull = mainShieldActiveDraw && subShieldActiveDraw;
         ctx.strokeStyle = 'rgba(57, 255, 20, 0.85)';
         ctx.lineWidth = 5;
         ctx.shadowBlur = 10;
         ctx.shadowColor = '#39ff14';
 
-        const shieldRad = (player.shieldAngle * Math.PI) / 360; // half angle bounds
+        const currentShieldAngle = isFull ? 360 : 90;
+        const shieldRad = (currentShieldAngle * Math.PI) / 360; // half angle bounds
         ctx.beginPath();
         ctx.arc(0, 0, player.radius + 8, -shieldRad, shieldRad);
         ctx.stroke();
@@ -2263,6 +2512,18 @@ function renderParticles() {
             p.y += p.vy;
             p.vx *= 0.95;
             p.vy *= 0.95;
+        }
+        else if (p.type === 'shockwave') {
+            ctx.save();
+            ctx.strokeStyle = p.color;
+            const pct = (p.maxLife - p.life) / p.maxLife;
+            ctx.lineWidth = 4 * (1 - pct);
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.maxRadius * pct, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
         }
     }
     ctx.restore();
@@ -2415,9 +2676,16 @@ function renderTacticalRadar() {
         if (agent.bailedOut) return;
 
         // Chameleon and Bagworm triggers HIDE agents completely from tactical screens
-        if (agent.isBagwormActive || agent.isChameleonActive) {
-            // AI competitors wearing Bagworm/Chameleon are 100% hidden
-            if (agent.id !== 'player') return;
+        if (agent.id !== 'player') {
+            if (agent.isChameleonActive) return;
+            if (agent.isBagwormActive) {
+                // Check if player has direct visual line of sight to this agent
+                const ray = arena.raycast(player.x, player.y, agent.x, agent.y);
+                if (ray.hit) {
+                    // Line of sight blocked by wall! So Bagworm works, hide it
+                    return;
+                }
+            }
         }
 
         const rx = (agent.x - arena.width / 2) * scaleX;

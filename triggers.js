@@ -161,7 +161,7 @@ const TRIGGER_CATALOG = {
     "Shield": {
         name: "Shield",
         category: "support",
-        description: "Green light barrier. Resize with Scroll: Small/Strong to 360°/Weak.",
+        description: "Green light barrier. Blocks standard attacks in arc. Standard Shield slows speed by 20% (drains 0.5 Trion/frame passively; 25% Trion of blocked dmg). Full Shield covers a full 360° and slows speed by 40% (drains 1.0 Trion/frame passively; 8% Trion of blocked dmg).",
         trionCost: 10, // Passive consumption on hit
         cooldown: 100,
         damage: 0
@@ -259,8 +259,34 @@ class Bullet {
             this.vx = Math.cos(this.angle) * this.speed;
             this.vy = Math.sin(this.angle) * this.speed;
         }
-        // 1. VIPER & COBRA PATHING (Follow drawn or pre-programmed waypoints)
-        else if (this.waypoints && this.waypoints.length > 0 && this.waypointIndex < this.waypoints.length) {
+        // 1. VIPER, COBRA, & TOMAHAWK PATHING (Follow drawn or pre-programmed waypoints)
+        if (this.type === 'tomahawk' && !this.waypoints && agents && agents.length > 0) {
+            // Find closest rival to auto-target complex route towards
+            let closestAgent = null;
+            let minDist = 999999;
+            for (const agent of agents) {
+                if (agent.id === this.ownerId || agent.trion <= 0 || agent.isChameleonActive) continue;
+                const dx = agent.x - this.x;
+                const dy = agent.y - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (agent.isBagwormActive && dist > 450) continue;
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestAgent = agent;
+                }
+            }
+            if (closestAgent) {
+                const angle = Math.atan2(closestAgent.y - this.y, closestAgent.x - this.x);
+                // Pre-program complex hook and S-curve waypoint segments
+                const p1 = { x: this.x + Math.cos(angle - 0.75) * (minDist * 0.3), y: this.y + Math.sin(angle - 0.75) * (minDist * 0.3) };
+                const p2 = { x: this.x + Math.cos(angle + 0.75) * (minDist * 0.65), y: this.y + Math.sin(angle + 0.75) * (minDist * 0.65) };
+                const p3 = { x: closestAgent.x, y: closestAgent.y };
+                this.waypoints = [p1, p2, p3];
+                this.waypointIndex = 0;
+            }
+        }
+
+        if (this.waypoints && this.waypoints.length > 0 && this.waypointIndex < this.waypoints.length) {
             const wp = this.waypoints[this.waypointIndex];
             const dx = wp.x - this.x;
             const dy = wp.y - this.y;
@@ -282,11 +308,11 @@ class Bullet {
 
             for (const agent of agents) {
                 if (agent.id === this.ownerId || agent.trion <= 0 || agent.isChameleonActive) continue;
-                
+
                 const dx = agent.x - this.x;
                 const dy = agent.y - this.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
-                
+
                 // Bagworm provides radar stealth, but in local combat vicinity (<450px) bullets can track!
                 if (agent.isBagwormActive && dist > 450) continue;
 
@@ -307,8 +333,17 @@ class Bullet {
                 angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
                 // Increased homing turnSpeeds for extremely aggressive and tight tracking vectors
-                const turnSpeed = this.type === 'tomahawk' ? 0.12 : (this.type === 'hornet' ? 0.20 : (this.type === 'salamander' ? 0.16 : 0.15));
-                this.angle += Math.max(-turnSpeed, Math.min(turnSpeed, angleDiff));
+                const turnSpeed = this.type === 'tomahawk' ? 0.12 : (this.type === 'hornet' ? 0.25 : (this.type === 'salamander' ? 0.16 : 0.15));
+
+                let targetAdjust = angleDiff;
+                if (this.type === 'hornet') {
+                    if (this.hornetOscTime === undefined) this.hornetOscTime = Math.random() * 100;
+                    this.hornetOscTime += 0.2;
+                    // Add varied curving oscillation to homing path
+                    targetAdjust += Math.sin(this.hornetOscTime) * 0.45;
+                }
+
+                this.angle += Math.max(-turnSpeed, Math.min(turnSpeed, targetAdjust));
 
                 // Hornet accelerates in speed over time!
                 if (this.type === 'hornet') {
@@ -356,9 +391,31 @@ class Bullet {
         // Spawn debris
         arena.spawnDebris(this.x, this.y, 25);
 
-        // Explosion AOE Damage Circle (80px radius)
-        const radius = 80;
+        // Dynamic explosion radius and max damage based on bullet type
+        let radius = 90;
         const damageMax = this.damage;
+
+        if (this.type === 'tomahawk') {
+            radius = 120;
+        } else if (this.type === 'salamander') {
+            radius = 145; // considerably vast blast radius!
+        } else if (this.type === 'meteora') {
+            radius = 90;
+        }
+
+        // Add visual expanding shockwave ring
+        const shockwaves = (typeof particles !== 'undefined') ? particles : (window.particles || null);
+        if (shockwaves) {
+            shockwaves.push({
+                type: 'shockwave',
+                x: this.x,
+                y: this.y,
+                maxRadius: radius,
+                life: 15,
+                maxLife: 15,
+                color: this.type === 'tomahawk' ? '#ff5722' : (this.type === 'salamander' ? '#ff3d00' : '#ff9800')
+            });
+        }
 
         // Damage tiles in range
         const startCol = Math.max(0, Math.floor((this.x - radius) / arena.tileSize));
@@ -434,13 +491,15 @@ class Bullet {
             ctx.fillStyle = '#ff3d00';
             ctx.fillRect(-this.size * 1.4, -this.size * 0.4, this.size * 0.6, this.size * 0.8);
         } else if (this.type === 'hornet') {
-            // Purple fast bullet with outer ring
+            // Looks identical to Hound mid-flight (yellow color, simple circle, but has superior curving homing path)
             ctx.beginPath();
             ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffdf00'; // Identical color to Hound
             ctx.fill();
-            ctx.strokeStyle = '#e040fb';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(-this.size * 1.2, -this.size * 1.2, this.size * 2.4, this.size * 2.4);
+            // Subtly distinguished by a faint yellow-amber outer glow ring
+            ctx.strokeStyle = 'rgba(255, 223, 0, 0.4)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
         } else if (this.type === 'cobra') {
             // Snake-like glowing cyan capsule
             ctx.fillRect(-this.size, -this.size / 2, this.size * 2, this.size);
@@ -493,12 +552,11 @@ class GrasshopperPad {
                 let angle = agent.angle;
 
                 if (agent.id === 'player') {
-                    // Check if mouse globals are available
-                    const mX = (window.mouseX !== undefined) ? window.mouseX : 0;
-                    const mY = (window.mouseY !== undefined) ? window.mouseY : 0;
-                    const camX = (window.camera && window.camera.x !== undefined) ? window.camera.x : 0;
-                    const camY = (window.camera && window.camera.y !== undefined) ? window.camera.y : 0;
-                    angle = Math.atan2((mY + camY) - agent.y, (mX + camX) - agent.x);
+                    if (agent.vx !== 0 || agent.vy !== 0) {
+                        angle = Math.atan2(agent.vy, agent.vx);
+                    } else {
+                        angle = agent.angle;
+                    }
                 } else {
                     // For AI: use their target agent direction or current motion direction
                     if (agent.targetAgent) {

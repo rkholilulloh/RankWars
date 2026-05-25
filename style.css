@@ -164,7 +164,7 @@ h3,
     display: none;
     flex-direction: column;
     z-index: 10;
-    padding: 20px;
+    /* padding: 20px; */
 }
 
 .screen.active {
@@ -266,6 +266,7 @@ h3,
 
 /* Agent Selection List */
 .agent-panel,
+.agent-grid,
 .briefcase-panel {
     max-height: calc(100vh - 150px);
     overflow-y: auto;
@@ -273,6 +274,7 @@ h3,
 
 /* Custom Scrollbars for Panels */
 .agent-panel::-webkit-scrollbar,
+.agent-grid::-webkit-scrollbar,
 .briefcase-panel::-webkit-scrollbar,
 .scrollable::-webkit-scrollbar,
 .bailout-details::-webkit-scrollbar {
@@ -281,6 +283,7 @@ h3,
 }
 
 .agent-panel::-webkit-scrollbar-track,
+.agent-grid::-webkit-scrollbar-track,
 .briefcase-panel::-webkit-scrollbar-track,
 .scrollable::-webkit-scrollbar-track,
 .bailout-details::-webkit-scrollbar-track {
@@ -289,6 +292,7 @@ h3,
 }
 
 .agent-panel::-webkit-scrollbar-thumb,
+.agent-grid::-webkit-scrollbar-thumb,
 .briefcase-panel::-webkit-scrollbar-thumb,
 .scrollable::-webkit-scrollbar-thumb,
 .bailout-details::-webkit-scrollbar-thumb {
@@ -298,6 +302,7 @@ h3,
 }
 
 .agent-panel::-webkit-scrollbar-thumb:hover,
+.agent-grid::-webkit-scrollbar-thumb:hover,
 .briefcase-panel::-webkit-scrollbar-thumb:hover,
 .scrollable::-webkit-scrollbar-thumb:hover,
 .bailout-details::-webkit-scrollbar-thumb:hover {
@@ -311,7 +316,7 @@ h3,
     flex-wrap: wrap;
     gap: 10px;
     padding: 20px;
-    overflow-y: auto;
+    /* overflow-y: auto; */
     flex: 1;
 }
 
@@ -660,11 +665,45 @@ h3,
 }
 
 .stat-value {
-    width: 25px;
-    text-align: right;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    min-width: 65px;
     font-size: 0.85rem;
     font-weight: 700;
     color: var(--text-primary);
+}
+
+.stat-btn {
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid var(--border-cyan);
+    color: var(--text-accent);
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 900;
+    transition: all 0.2s ease;
+    user-select: none;
+    padding: 0;
+    line-height: 1;
+}
+
+.stat-btn:hover {
+    background: var(--border-cyan);
+    color: #000;
+    box-shadow: 0 0 8px var(--border-cyan);
+}
+
+.stat-num {
+    display: inline-block;
+    min-width: 15px;
+    text-align: center;
 }
 
 .agent-bio {
@@ -698,7 +737,7 @@ h3,
 .slots-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 7px;
 }
 
 .slot-item {
@@ -815,7 +854,7 @@ h3,
 
 .rival-checkboxes-container {
     display: flex;
-    gap: 15px;
+    gap: 8px;
     flex-wrap: wrap;
     margin-top: 4px;
 }

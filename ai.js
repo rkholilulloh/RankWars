@@ -78,6 +78,7 @@ class AIAgent {
         this.weightStacks = 0; // stack up to 3 times
         this.isDashing = false;
         this.dashTimer = 0;
+        this.stunTimer = 0; // Stun timer for Gimlet stuns
 
         // Briefcase configuration (4 Main, 4 Sub)
         this.briefcase = {
@@ -252,7 +253,7 @@ class AIAgent {
                         let angleDiff = attackAngle - this.angle;
                         angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
-                        const currentShieldAngle = isFullShield ? 150 : this.shieldAngle;
+                        const currentShieldAngle = isFullShield ? 360 : 90;
                         const shieldRad = (currentShieldAngle * Math.PI) / 360;
                         if (Math.abs(angleDiff) <= shieldRad) {
                             shouldBlock = true;
@@ -273,15 +274,15 @@ class AIAgent {
 
                     if (shouldBlock && (!isGimlet || isFullShield)) {
                         if (isFullShield) {
-                            // Full Shield holds! Only drain 2% of the damage as Trion cost
-                            this.trion -= amount * 0.02;
+                            // Full Shield holds! Only drain 8% of the damage as Trion cost
+                            this.trion -= amount * 0.08;
                             window.audio.playShieldBlock();
                             if (window.spawnSparks) {
                                 window.spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ffd700', 16);
                             }
                         } else {
-                            // Standard Shield holds! Completely block damage to Trion HP body, charge 8% Trion cost
-                            this.trion -= amount * 0.08;
+                            // Standard Shield holds! Completely block damage to Trion HP body, charge 25% Trion cost
+                            this.trion -= amount * 0.25;
                             window.audio.playShieldBlock();
                             if (window.spawnSparks) {
                                 window.spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#39ff14', 12);
@@ -308,6 +309,14 @@ class AIAgent {
             this.lastAttackTime = Date.now();
         }
 
+        // Gimlet stuns AI!
+        if (bulletType === 'gimlet') {
+            this.stunTimer = 20; // 20 frames stun!
+        }
+
+        if (window.spawnSparks) {
+            window.spawnSparks(this.x, this.y, '#ff3b30', 8);
+        }
         // Active leakage if HP falls below 50%
         if (this.bodyHp < this.bodyHpMax * 0.5 && !this.isLeaking) {
             this.isLeaking = true;
@@ -386,6 +395,17 @@ class AIAgent {
             currentSpeed *= 1.15;
         }
 
+        // Apply movement speed penalty if shielding
+        if (this.isShieldActive && this.trion > 0) {
+            const hasShieldMain = this.briefcase.main[this.activeMain] === "Shield";
+            const hasShieldSub = this.briefcase.sub[this.activeSub] === "Shield";
+            if (hasShieldMain && hasShieldSub) {
+                currentSpeed *= 0.60; // 40% speed penalty for Full Shield
+            } else {
+                currentSpeed *= 0.80; // 20% speed penalty for Standard Shield
+            }
+        }
+
         if (inEnemySpider) {
             currentSpeed *= 0.4;
             if (window.spawnSparks && Math.random() < 0.22) {
@@ -416,10 +436,17 @@ class AIAgent {
             const dist = Math.sqrt((agent.x - this.x) ** 2 + (agent.y - this.y) ** 2);
 
             // Stealth visual detection limits:
-            // Bagworm detection limit: 220px
-            if (agent.isBagwormActive && dist > 220) continue;
-            // Chameleon detection limit: 70px
-            if (agent.isChameleonActive && dist > 70) continue;
+            let detected = true;
+            if (agent.isBagwormActive) {
+                // If there's a wall blocking direct visual sight, Bagworm keeps them hidden.
+                const ray = arena.raycast(this.x, this.y, agent.x, agent.y);
+                if (ray.hit && dist > 220) {
+                    detected = false;
+                }
+            }
+            if (agent.isChameleonActive && dist > 70) detected = false;
+
+            if (!detected) continue;
 
             if (dist < threatDist) {
                 threatDist = dist;
@@ -430,7 +457,14 @@ class AIAgent {
         this.targetAgent = nearestThreat;
 
         // 2. STEERING & MOVEMENT CONTROL
-        if (this.isDashing) {
+        if (this.stunTimer && this.stunTimer > 0) {
+            this.stunTimer--;
+            this.vx = 0;
+            this.vy = 0;
+            if (window.spawnSparks && Math.random() < 0.35) {
+                window.spawnSparks(this.x, this.y, '#ffd700', 3); // Gold sparks for stun
+            }
+        } else if (this.isDashing) {
             this.vx *= 0.92;
             this.vy *= 0.92;
             this.dashTimer--;
@@ -448,8 +482,8 @@ class AIAgent {
             else if (this.state === 'snipe' && this.targetAgent) {
                 // Snipe state: keep maximum distance but in sight
                 const angle = Math.atan2(this.y - this.targetAgent.y, this.x - this.targetAgent.x);
-                tx = this.targetAgent.x + Math.cos(angle) * 450;
-                ty = this.targetAgent.y + Math.sin(angle) * 450;
+                tx = this.targetAgent.x + Math.cos(angle) * 700;
+                ty = this.targetAgent.y + Math.sin(angle) * 700;
             }
             else if (this.state === 'flee' && this.targetAgent) {
                 // Run opposite direction
@@ -490,8 +524,27 @@ class AIAgent {
             }
         }
 
+        // Determine dynamic engagement distance based on equipped briefcase triggers
+        let engageDist = 600; // Default threat distance
+        const hasSniper = this.briefcase.main.some(t => t === 'Egret' || t === 'Ibis' || t === 'Lightning');
+        const hasGunnerOrShooter = this.briefcase.main.some(t => {
+            const config = window.TRIGGER_CATALOG[t];
+            return config && (config.category === 'gunner' || config.category === 'shooter');
+        }) || this.briefcase.sub.some(t => {
+            const config = window.TRIGGER_CATALOG[t];
+            return config && (config.category === 'gunner' || config.category === 'shooter');
+        });
+
+        if (hasSniper) {
+            engageDist = 1300;
+        } else if (hasGunnerOrShooter) {
+            engageDist = 650;
+        } else {
+            engageDist = 300; // Attacker close-range combat
+        }
+
         // 3. COMBAT ACTIONS & TRIGGER USE
-        if (this.targetAgent && threatDist < 600) {
+        if (this.targetAgent && threatDist < engageDist && (!this.stunTimer || this.stunTimer <= 0)) {
             // Aim facing vector at threat
             this.angle = Math.atan2(this.targetAgent.y - this.y, this.targetAgent.x - this.x);
 
@@ -504,7 +557,8 @@ class AIAgent {
 
     evaluateState(allAgents) {
         // Snipe state if sniper
-        if (this.preset === 'chika') {
+        const hasSniper = this.briefcase.main.some(t => t === 'Egret' || t === 'Ibis' || t === 'Lightning');
+        if (hasSniper) {
             this.state = this.trion < 400 ? 'flee' : 'snipe';
             if (this.state === 'flee') {
                 this.isBagwormActive = true; // cloaked sniper trying to escape
@@ -572,7 +626,10 @@ class AIAgent {
             // Turn shield on towards attack angle
             this.angle = incomingAngle;
             // Shield cost: passive consumption on frame
-            this.trion -= 1.0;
+            const hasShieldMain = this.briefcase.main[this.activeMain] === "Shield";
+            const hasShieldSub = this.briefcase.sub[this.activeSub] === "Shield";
+            const isFullShield = hasShieldMain && hasShieldSub;
+            this.trion -= isFullShield ? 1.0 : 0.5;
             this.isShieldActive = true;
         } else {
             this.isShieldActive = false;
@@ -836,6 +893,9 @@ class AIAgent {
                         range: 160
                     });
                 }
+                if (window.cutSpiderWebsInArc) {
+                    window.cutSpiderWebsInArc(this, 160);
+                }
                 return;
             }
 
@@ -865,6 +925,9 @@ class AIAgent {
                         maxLife: 10,
                         range: activeMainConfig.range || 45
                     });
+                }
+                if (window.cutSpiderWebsInArc) {
+                    window.cutSpiderWebsInArc(this, activeMainConfig.range || 45);
                 }
                 return;
             }
@@ -1094,13 +1157,18 @@ class AIAgent {
 
         // Draw active Shield arc if AI is blocking
         if (this.isShieldActive) {
-            ctx.save();
-            ctx.strokeStyle = 'rgba(57, 255, 20, 0.85)';
-            ctx.lineWidth = 5;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = '#39ff14';
+            const hasShieldMain = this.briefcase.main[this.activeMain] === "Shield";
+            const hasShieldSub = this.briefcase.sub[this.activeSub] === "Shield";
+            const isFullShield = hasShieldMain && hasShieldSub;
 
-            const shieldRad = (this.shieldAngle * Math.PI) / 360; // half angle bounds
+            ctx.save();
+            ctx.strokeStyle = isFullShield ? 'rgba(0, 240, 255, 0.9)' : 'rgba(57, 255, 20, 0.85)';
+            ctx.lineWidth = isFullShield ? 6 : 5;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = isFullShield ? '#00f0ff' : '#39ff14';
+
+            const currentShieldAngle = isFullShield ? 360 : 90;
+            const shieldRad = (currentShieldAngle * Math.PI) / 360; // half angle bounds
             ctx.beginPath();
             ctx.arc(0, 0, this.radius + 8, -shieldRad, shieldRad);
             ctx.stroke();
