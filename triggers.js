@@ -198,6 +198,14 @@ const TRIGGER_CATALOG = {
         cooldown: 500,
         damage: 0
     },
+    "Bagworm": {
+        name: "Bagworm",
+        category: "support",
+        description: "Stealth cloak. Hides the user from radar unless in close combat range (<450px) or visible in direct line-of-sight. Consumes 0.3 Trion/sec passively.",
+        trionCost: 0,
+        cooldown: 0,
+        damage: 0
+    },
     "Empty": {
         name: "Empty",
         category: "support",
@@ -300,46 +308,70 @@ class Bullet {
                 this.vy = Math.sin(targetAngle) * this.speed;
             }
         }
-        // 2. HOUND / TOMAHAWK / HORNET / SALAMANDER HOMING (Adjust vectors towards closest rival agent)
+        // 2. HOUND / TOMAHAWK / HORNET / SALAMANDER HOMING (Dynamic alignment-based locking)
         else if ((this.type === 'hound' || this.type === 'tomahawk' || this.type === 'hornet' || this.type === 'salamander') && agents && agents.length > 0) {
-            // Find closest rival who is not bailed out and not the owner
-            let closestAgent = null;
-            let minDist = 999999;
-
-            for (const agent of agents) {
-                if (agent.id === this.ownerId || agent.trion <= 0 || agent.isChameleonActive) continue;
-
-                const dx = agent.x - this.x;
-                const dy = agent.y - this.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-
-                // Bagworm provides radar stealth, but in local combat vicinity (<450px) bullets can track!
-                if (agent.isBagwormActive && dist > 450) continue;
-
-                if (dist < minDist) {
-                    minDist = dist;
-                    closestAgent = agent;
+            
+            // Verify if locked target is still valid
+            if (this.target) {
+                const dist = Math.sqrt((this.target.x - this.x) ** 2 + (this.target.y - this.y) ** 2);
+                const isStealthy = this.target.isChameleonActive || (this.target.isBagwormActive && dist > 450);
+                if (this.target.trion <= 0 || this.target.bailedOut || isStealthy) {
+                    this.target = null; // Lose lock
                 }
             }
 
-            if (closestAgent) {
-                const dx = closestAgent.x - this.x;
-                const dy = closestAgent.y - this.y;
+            // If no locked target, select the best target prioritized by heading alignment
+            if (!this.target) {
+                let bestAgent = null;
+                let bestScore = -999999;
+
+                for (const agent of agents) {
+                    if (agent.id === this.ownerId || agent.trion <= 0 || agent.isChameleonActive) continue;
+
+                    const dx = agent.x - this.x;
+                    const dy = agent.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (agent.isBagwormActive && dist > 450) continue;
+
+                    const angleToAgent = Math.atan2(dy, dx);
+                    let diff = angleToAgent - this.angle;
+                    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                    const alignment = Math.cos(diff); // 1.0 = straight ahead, -1.0 = behind
+
+                    // Prioritize agents located in front of the heading vector
+                    if (alignment < 0.15 && dist > 150) {
+                        continue;
+                    }
+
+                    // Score: alignment-bonus vs distance-penalty
+                    const score = alignment * 2500 - dist;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestAgent = agent;
+                    }
+                }
+
+                if (bestAgent) {
+                    this.target = bestAgent; // Lock target!
+                }
+            }
+
+            if (this.target) {
+                const dx = this.target.x - this.x;
+                const dy = this.target.y - this.y;
                 const targetAngle = Math.atan2(dy, dx);
 
                 // Gradually adjust bullet angle
                 let angleDiff = targetAngle - this.angle;
-                // Normalize angleDiff to -PI to PI
                 angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
-                // Increased homing turnSpeeds for extremely aggressive and tight tracking vectors
                 const turnSpeed = this.type === 'tomahawk' ? 0.12 : (this.type === 'hornet' ? 0.25 : (this.type === 'salamander' ? 0.16 : 0.15));
 
                 let targetAdjust = angleDiff;
                 if (this.type === 'hornet') {
                     if (this.hornetOscTime === undefined) this.hornetOscTime = Math.random() * 100;
                     this.hornetOscTime += 0.2;
-                    // Add varied curving oscillation to homing path
                     targetAdjust += Math.sin(this.hornetOscTime) * 0.45;
                 }
 
@@ -353,7 +385,6 @@ class Bullet {
                 this.vx = Math.cos(this.angle) * this.speed;
                 this.vy = Math.sin(this.angle) * this.speed;
             } else if (this.type === 'hornet') {
-                // If hornet has no target, it still accelerates forward!
                 this.speed = Math.min(22, this.speed + 0.12);
                 this.vx = Math.cos(this.angle) * this.speed;
                 this.vy = Math.sin(this.angle) * this.speed;

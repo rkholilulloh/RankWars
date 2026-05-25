@@ -93,6 +93,7 @@ class AIAgent {
         this.isChameleonActive = false;
         this.isRaygustShieldActive = false;
         this.isShieldActive = false;
+        this.prefersBagworm = Math.random() < 0.65;
 
         // Timers & State Machine
         this.cooldowns = { main: 0, sub: 0 };
@@ -556,30 +557,48 @@ class AIAgent {
     }
 
     evaluateState(allAgents) {
-        // Snipe state if sniper
+        const hasBagworm = this.briefcase.main.includes('Bagworm') || this.briefcase.sub.includes('Bagworm');
         const hasSniper = this.briefcase.main.some(t => t === 'Egret' || t === 'Ibis' || t === 'Lightning');
+
+        if (!hasBagworm) {
+            this.isBagwormActive = false;
+            if (hasSniper) {
+                this.state = this.trion < 400 ? 'flee' : 'snipe';
+                return;
+            }
+            if (this.trion < 300) {
+                this.state = 'flee';
+            } else {
+                this.state = Math.random() > 0.4 ? 'chase' : 'patrol';
+            }
+            return;
+        }
+
+        // If they have Bagworm, apply prefersBagworm trait logic
         if (hasSniper) {
             this.state = this.trion < 400 ? 'flee' : 'snipe';
-            if (this.state === 'flee') {
-                this.isBagwormActive = true; // cloaked sniper trying to escape
+            if (this.prefersBagworm) {
+                this.isBagwormActive = this.state === 'flee' ? (Math.random() < 0.9) : (Math.random() < 0.95);
             } else {
-                // Snipers always maintain Bagworm until they aim to shoot!
-                this.isBagwormActive = true;
+                this.isBagwormActive = this.state === 'flee' ? (Math.random() < 0.2) : false;
             }
             return;
         }
 
         if (this.trion < 300) {
             this.state = 'flee';
-            this.isBagwormActive = true; // hide to run away
+            this.isBagwormActive = this.prefersBagworm ? (Math.random() < 0.9) : (Math.random() < 0.2);
         } else {
-            // Deploy Bagworm if patrolling to maintain stealth. Only deactivate when actively chasing or fighting.
-            if (this.state === 'patrol' || !this.targetAgent) {
-                this.isBagwormActive = true;
-            } else {
-                this.isBagwormActive = Math.random() > 0.5; // occasionally hide while chasing
-            }
             this.state = Math.random() > 0.4 ? 'chase' : 'patrol';
+            if (this.prefersBagworm) {
+                if (this.state === 'patrol' || !this.targetAgent) {
+                    this.isBagwormActive = Math.random() < 0.85;
+                } else {
+                    this.isBagwormActive = Math.random() < 0.35;
+                }
+            } else {
+                this.isBagwormActive = false;
+            }
         }
     }
 

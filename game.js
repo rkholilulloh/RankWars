@@ -259,17 +259,29 @@ function setupBriefcaseSelectors() {
         document.getElementById('target-slot-id').textContent = `${side.toUpperCase()} ${index + 1}`;
         dialog.classList.add('active');
 
+        // Dynamically select target category tab based on the currently equipped trigger
+        const currentTriggerName = activeBriefcase[side][index];
+        const currentTrigger = window.TRIGGER_CATALOG[currentTriggerName];
+        let targetCategory = 'attacker'; // default if Empty/none
+        if (currentTriggerName && currentTriggerName !== 'Empty' && currentTrigger) {
+            if (currentTrigger.category === 'gunner') {
+                targetCategory = 'sniper'; // group Gunner into Sniper/Gunner tab
+            } else {
+                targetCategory = currentTrigger.category;
+            }
+        }
+
         // Reset and sync tab buttons active state
         const tabs = document.querySelectorAll('.tab-btn');
         tabs.forEach(t => {
-            if (t.getAttribute('data-category') === 'attacker') {
+            if (t.getAttribute('data-category') === targetCategory) {
                 t.classList.add('active');
             } else {
                 t.classList.remove('active');
             }
         });
 
-        showCategory('attacker'); // default tab
+        showCategory(targetCategory);
     };
 
     mainSlots.forEach((slot, idx) => {
@@ -339,7 +351,7 @@ function showCategory(category) {
             }
 
             // 2. Enforce Main-only and Sub-only trigger rules based on Border regulations
-            if (side === 'main' && (key === 'Bagworm' || key === 'Lead Bullet' || key === 'Teleporter' || key === 'Senku' || key === 'Genyo' || key === 'Thruster' || key === 'Mole Claw')) {
+            if (side === 'main' && (key === 'Lead Bullet' || key === 'Teleporter' || key === 'Senku' || key === 'Genyo' || key === 'Thruster' || key === 'Mole Claw')) {
                 continue;
             }
             if (side === 'sub' && (key === 'Egret' || key === 'Lightning' || key === 'Ibis')) {
@@ -604,6 +616,44 @@ function startSimulation() {
     const difficultySelect = document.getElementById('difficulty-select');
     gameDifficulty = difficultySelect ? difficultySelect.value : 'medium';
 
+    // 4. Spawns Smart AI Opponents based on user selections
+    const selectedRivals = [];
+    const checkboxes = document.querySelectorAll('.rival-checkboxes-container input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        if (cb.checked) {
+            const val = cb.value;
+            const presetData = agentPresets[val];
+            if (presetData) {
+                selectedRivals.push({ preset: val, name: presetData.name });
+            }
+        }
+    });
+
+    // Fallback if none checked (spawn at least Osamu Mikumo)
+    if (selectedRivals.length === 0) {
+        selectedRivals.push({ preset: 'osamu', name: 'Osamu Mikumo' });
+    }
+
+    // Spawn Extra B-Rank Agents
+    const extraRivalsSelect = document.getElementById('extra-rivals-select');
+    const extraRivalsCount = extraRivalsSelect ? parseInt(extraRivalsSelect.value, 10) : 0;
+    const bRankPresets = ['yuma', 'osamu', 'chika', 'hyuse', 'custom'];
+    const bRankFirstNames = ['Kuruma', 'Tonoka', 'Okadera', 'Arao', 'Koarai', 'Okudera', 'Inukai', 'Tsuzuji', 'Yoneya', 'Miwa'];
+    const bRankRoles = ['Attacker', 'Shooter', 'Gunner', 'Sniper'];
+
+    for (let i = 0; i < extraRivalsCount; i++) {
+        const preset = bRankPresets[Math.floor(Math.random() * bRankPresets.length)];
+        const firstName = bRankFirstNames[Math.floor(Math.random() * bRankFirstNames.length)];
+        let role = 'Attacker';
+        if (preset === 'chika') role = 'Sniper';
+        else if (preset === 'osamu') role = 'Shooter';
+        else if (preset === 'hyuse') role = 'All-Rounder';
+        else if (preset === 'custom') role = 'Gunner';
+
+        const name = `B-Rank ${firstName} (${role})`;
+        selectedRivals.push({ preset, name });
+    }
+
     // 3. Spawns Player Object
     player = {
         id: 'player',
@@ -788,37 +838,62 @@ function startSimulation() {
         }
     };
 
-    const spawnPoints = [
-        { x: 100, y: 100 }, // Top-Left
-        { x: arena.width - 100, y: arena.height - 100 }, // Bottom-Right
-        { x: arena.width - 100, y: 100 }, // Top-Right
-        { x: 100, y: arena.height - 100 }, // Bottom-Left
-        { x: arena.width / 2, y: 100 }, // Top-Center
-        { x: arena.width / 2, y: arena.height - 100 }, // Bottom-Center
-        { x: 100, y: arena.height / 2 }, // Left-Center
-        { x: arena.width - 100, y: arena.height / 2 }, // Right-Center
-        { x: arena.width / 3, y: arena.height / 3 },
-        { x: (arena.width * 2) / 3, y: (arena.height * 2) / 3 },
-        { x: (arena.width * 2) / 3, y: arena.height / 3 },
-        { x: arena.width / 3, y: (arena.height * 2) / 3 }
-    ];
+    // Dynamic Spawn Solver: Varied & Distance-Enforced coordinates
+    const usedSpawnPoints = [];
+    const totalAgentsCount = 1 + selectedRivals.length;
+    const mapArea = arena.width * arena.height;
+    
+    // Scale target minimum spawn distance based on density
+    let targetMinDist = 420;
+    const areaPerAgent = mapArea / totalAgentsCount;
+    if (areaPerAgent < 160000) {
+        targetMinDist = Math.max(120, Math.sqrt(areaPerAgent) * 0.72);
+    }
 
-    const getWalkableSpawn = (pt) => {
-        if (!arena.isWall(pt.x, pt.y)) return pt;
-        for (let radius = 30; radius < 300; radius += 30) {
-            for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 4) {
-                const sx = pt.x + Math.cos(angle) * radius;
-                const sy = pt.y + Math.sin(angle) * radius;
-                if (sx > 50 && sx < arena.width - 50 && sy > 50 && sy < arena.height - 50 && !arena.isWall(sx, sy)) {
-                    return { x: sx, y: sy };
+    const getDynamicSpawnPoint = (existingPoints, minDist) => {
+        for (let attempt = 0; attempt < 350; attempt++) {
+            // Margin of 90px to prevent spawning too close to borders
+            const rx = Math.random() * (arena.width - 180) + 90;
+            const ry = Math.random() * (arena.height - 180) + 90;
+            
+            if (arena.isWall(rx, ry)) continue;
+            
+            // Check if too close to already chosen spawn points
+            let tooClose = false;
+            for (const pt of existingPoints) {
+                const dx = pt.x - rx;
+                const dy = pt.y - ry;
+                if (dx * dx + dy * dy < minDist * minDist) {
+                    tooClose = true;
+                    break;
                 }
             }
+            if (!tooClose) {
+                return { x: rx, y: ry };
+            }
         }
-        return pt;
+        
+        // Relax distance constraint if solver fails
+        if (minDist > 60) {
+            return getDynamicSpawnPoint(existingPoints, minDist - 35);
+        }
+        
+        // Walkability fallback
+        for (let attempt = 0; attempt < 250; attempt++) {
+            const rx = Math.random() * (arena.width - 120) + 60;
+            const ry = Math.random() * (arena.height - 120) + 60;
+            if (!arena.isWall(rx, ry)) {
+                return { x: rx, y: ry };
+            }
+        }
+        
+        // Final coordinate safety point
+        return { x: 100, y: 100 };
     };
 
-    // Spawn player at safe Point 0
-    const playerSpawn = getWalkableSpawn(spawnPoints[0]);
+    // Spawn player at dynamically chosen spawn point
+    const playerSpawn = getDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+    usedSpawnPoints.push(playerSpawn);
     player.x = playerSpawn.x;
     player.y = playerSpawn.y;
     player.trion = player.trionMax;
@@ -826,16 +901,10 @@ function startSimulation() {
     player.isLeaking = false;
     player.leakRate = 0;
 
-    // Activate initial Bagworm on player if equipped
-    let playerBgwMainIdx = player.briefcase.main.indexOf('Bagworm');
-    let playerBgwSubIdx = player.briefcase.sub.indexOf('Bagworm');
-    if (playerBgwMainIdx !== -1) {
-        player.activeMainIndex = playerBgwMainIdx;
-        player.isBagwormActive = true;
-    } else if (playerBgwSubIdx !== -1) {
-        player.activeSubIndex = playerBgwSubIdx;
-        player.isBagwormActive = true;
-    }
+    // Initialize starting active slots for player to the first slots
+    player.activeMainIndex = 0;
+    player.activeSubIndex = 0;
+    player.isBagwormActive = (player.briefcase.main[0] === 'Bagworm' || player.briefcase.sub[0] === 'Bagworm');
 
     // Clear vectors
     bullets.length = 0;
@@ -844,62 +913,30 @@ function startSimulation() {
     allAgents.length = 0;
     allAgents.push(player);
 
-    // 4. Spawns Smart AI Opponents based on user selections
-    const selectedRivals = [];
-    const checkboxes = document.querySelectorAll('.rival-checkboxes-container input[type="checkbox"]');
-    checkboxes.forEach(cb => {
-        if (cb.checked) {
-            const val = cb.value;
-            const presetData = agentPresets[val];
-            if (presetData) {
-                selectedRivals.push({ preset: val, name: presetData.name });
-            }
-        }
-    });
 
-    // Fallback if none checked (spawn at least Osamu Mikumo)
-    if (selectedRivals.length === 0) {
-        selectedRivals.push({ preset: 'osamu', name: 'Osamu Mikumo' });
-    }
-
-    // Spawn Extra B-Rank Agents
-    const extraRivalsSelect = document.getElementById('extra-rivals-select');
-    const extraRivalsCount = extraRivalsSelect ? parseInt(extraRivalsSelect.value, 10) : 0;
-    const bRankPresets = ['yuma', 'osamu', 'chika', 'hyuse', 'custom'];
-    const bRankFirstNames = ['Kuruma', 'Tonoka', 'Okadera', 'Arao', 'Koarai', 'Okudera', 'Inukai', 'Tsuzuji', 'Yoneya', 'Miwa'];
-    const bRankRoles = ['Attacker', 'Shooter', 'Gunner', 'Sniper'];
-
-    for (let i = 0; i < extraRivalsCount; i++) {
-        const preset = bRankPresets[Math.floor(Math.random() * bRankPresets.length)];
-        const firstName = bRankFirstNames[Math.floor(Math.random() * bRankFirstNames.length)];
-        let role = 'Attacker';
-        if (preset === 'chika') role = 'Sniper';
-        else if (preset === 'osamu') role = 'Shooter';
-        else if (preset === 'hyuse') role = 'All-Rounder';
-        else if (preset === 'custom') role = 'Gunner';
-
-        const name = `B-Rank ${firstName} (${role})`;
-        selectedRivals.push({ preset, name });
-    }
 
     selectedRivals.forEach((rival, i) => {
         const ai = new window.AIAgent(`ai_${i}`, rival.name, rival.preset, gameDifficulty);
 
-        // Spawn AI sequentially at distant spawn points
-        const ptIndex = (i + 1) % spawnPoints.length;
-        const aiSpawn = getWalkableSpawn(spawnPoints[ptIndex]);
+        // Spawn AI dynamically at spaced, varied coordinates
+        const aiSpawn = getDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+        usedSpawnPoints.push(aiSpawn);
         ai.x = aiSpawn.x;
         ai.y = aiSpawn.y;
 
-        // Activate initial Bagworm on AI if equipped
+        // Activate initial Bagworm on AI if equipped (with 65% chance so not all enemies start with it active)
         let aiBgwMainIdx = ai.briefcase.main.indexOf('Bagworm');
         let aiBgwSubIdx = ai.briefcase.sub.indexOf('Bagworm');
-        if (aiBgwMainIdx !== -1) {
-            ai.activeMain = aiBgwMainIdx;
-            ai.isBagwormActive = true;
-        } else if (aiBgwSubIdx !== -1) {
-            ai.activeSub = aiBgwSubIdx;
-            ai.isBagwormActive = true;
+        if ((aiBgwMainIdx !== -1 || aiBgwSubIdx !== -1) && Math.random() < 0.65) {
+            if (aiBgwMainIdx !== -1) {
+                ai.activeMain = aiBgwMainIdx;
+                ai.isBagwormActive = true;
+            } else if (aiBgwSubIdx !== -1) {
+                ai.activeSub = aiBgwSubIdx;
+                ai.isBagwormActive = true;
+            }
+        } else {
+            ai.isBagwormActive = false;
         }
 
         allAgents.push(ai);
