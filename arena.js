@@ -280,8 +280,33 @@ class Arena {
     }
 
     addSpiderWeb(x1, y1, x2, y2, ownerId) {
+        // Enforce max wire quota limit (7 primary wires per owner)
+        const maxWires = 7;
+        const primaryWebs = this.spiderWebs.filter(w => w.ownerId === ownerId && !w.isAutoConnected);
+        if (primaryWebs.length >= maxWires) {
+            const oldestPrimaryIdx = this.spiderWebs.findIndex(w => w.ownerId === ownerId && !w.isAutoConnected);
+            if (oldestPrimaryIdx !== -1) {
+                this.spiderWebs.splice(oldestPrimaryIdx, 1);
+                
+                // Also clean up any auto-connected cross-wires that were orphaned
+                this.spiderWebs = this.spiderWebs.filter(w => {
+                    if (w.ownerId !== ownerId || !w.isAutoConnected) return true;
+                    // Check if there is still a primary web sharing endpoint 1
+                    const hasEnd1 = this.spiderWebs.some(pw => pw.ownerId === ownerId && !pw.isAutoConnected &&
+                        ((pw.x1 === w.x1 && pw.y1 === w.y1) || (pw.x2 === w.x1 && pw.y2 === w.y1))
+                    );
+                    // Check if there is still a primary web sharing endpoint 2
+                    const hasEnd2 = this.spiderWebs.some(pw => pw.ownerId === ownerId && !pw.isAutoConnected &&
+                        ((pw.x1 === w.x2 && pw.y1 === w.y2) || (pw.x2 === w.x2 && pw.y2 === w.y2))
+                    );
+                    return hasEnd1 && hasEnd2;
+                });
+            }
+        }
+
         // Push primary wire segment
         this.spiderWebs.push({ x1, y1, x2, y2, ownerId, isAutoConnected: false });
+
 
         // Holographic auto-connection distance
         const connectDist = 220;

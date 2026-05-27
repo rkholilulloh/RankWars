@@ -315,7 +315,9 @@ class Bullet {
             if (this.target) {
                 const dist = Math.sqrt((this.target.x - this.x) ** 2 + (this.target.y - this.y) ** 2);
                 const isStealthy = this.target.isChameleonActive || (this.target.isBagwormActive && dist > 450);
-                if (this.target.trion <= 0 || this.target.bailedOut || isStealthy) {
+                const owner = agents.find(a => a.id === this.ownerId);
+                const isTeammate = owner && this.target.teamId && this.target.teamId === owner.teamId;
+                if (this.target.trion <= 0 || this.target.bailedOut || isStealthy || isTeammate) {
                     this.target = null; // Lose lock
                 }
             }
@@ -324,9 +326,11 @@ class Bullet {
             if (!this.target) {
                 let bestAgent = null;
                 let bestScore = -999999;
+                const owner = agents.find(a => a.id === this.ownerId);
 
                 for (const agent of agents) {
                     if (agent.id === this.ownerId || agent.trion <= 0 || agent.isChameleonActive) continue;
+                    if (owner && agent.teamId && agent.teamId === owner.teamId) continue; // Skip teammates
 
                     const dx = agent.x - this.x;
                     const dy = agent.y - this.y;
@@ -469,6 +473,7 @@ class Bullet {
         }
 
         // Damage agents in range
+        const owner = agents.find(a => a.id === this.ownerId);
         for (const agent of agents) {
             if (agent.bailedOut) continue;
             const dist = Math.sqrt((agent.x - this.x) ** 2 + (agent.y - this.y) ** 2);
@@ -565,7 +570,7 @@ class GrasshopperPad {
         this.size = 25; // width/height
         this.ownerId = ownerId;
         this.life = 360; // 6 seconds before decaying
-        this.color = '#39ff14';
+        this.color = '#00f0ff'; // Anime-accurate cyan/blue glow
     }
 
     update(agents) {
@@ -583,17 +588,53 @@ class GrasshopperPad {
                 let angle = agent.angle;
 
                 if (agent.id === 'player') {
-                    if (agent.vx !== 0 || agent.vy !== 0) {
-                        angle = Math.atan2(agent.vy, agent.vx);
+                    // Access keys safely
+                    const activeKeys = window.keys || (typeof keys !== 'undefined' ? keys : {});
+                    let dx = 0;
+                    let dy = 0;
+                    if (activeKeys['W']) dy = -1;
+                    if (activeKeys['S']) dy = 1;
+                    if (activeKeys['A']) dx = -1;
+                    if (activeKeys['D']) dx = 1;
+
+                    if (this.ownerId === 'player') {
+                        // Own Grasshopper: Boost in WASD direction, or aiming direction if no keys pressed
+                        if (dx !== 0 || dy !== 0) {
+                            angle = Math.atan2(dy, dx);
+                        } else {
+                            angle = agent.angle;
+                        }
                     } else {
-                        angle = agent.angle;
+                        // Enemy Grasshopper Trap: Boost in opposite direction!
+                        if (dx !== 0 || dy !== 0) {
+                            angle = Math.atan2(-dy, -dx);
+                        } else {
+                            angle = agent.angle + Math.PI;
+                        }
+                        if (typeof addLog !== 'undefined') {
+                            addLog("[WARNING] Stepped on an ENEMY Grasshopper trap! Direction reversed!", "kill");
+                        }
                     }
                 } else {
-                    // For AI: use their target agent direction or current motion direction
-                    if (agent.targetAgent) {
-                        angle = Math.atan2(agent.targetAgent.y - agent.y, agent.targetAgent.x - agent.x);
-                    } else if (agent.vx !== 0 || agent.vy !== 0) {
-                        angle = Math.atan2(agent.vy, agent.vx);
+                    // For AI agents
+                    const isOwnPad = (this.ownerId === agent.id);
+                    if (isOwnPad) {
+                        // Own Grasshopper: Boost towards target or current motion
+                        if (agent.targetAgent) {
+                            angle = Math.atan2(agent.targetAgent.y - agent.y, agent.targetAgent.x - agent.x);
+                        } else if (agent.vx !== 0 || agent.vy !== 0) {
+                            angle = Math.atan2(agent.vy, agent.vx);
+                        }
+                    } else {
+                        // Enemy Grasshopper Trap: Reverse boost direction!
+                        if (agent.targetAgent) {
+                            angle = Math.atan2(agent.y - agent.targetAgent.y, agent.x - agent.targetAgent.x);
+                        } else if (agent.vx !== 0 || agent.vy !== 0) {
+                            angle = Math.atan2(-agent.vx, -agent.vy);
+                        }
+                        if (typeof addLog !== 'undefined') {
+                            addLog(`[TACTICAL] AI ${agent.name} triggered an enemy Grasshopper trap!`, "system");
+                        }
                     }
                 }
 
@@ -622,7 +663,7 @@ class GrasshopperPad {
         ctx.shadowColor = this.color;
         ctx.lineWidth = 2.5;
 
-        // Draw green tactical target icon
+        // Draw cyber-blue tactical target icon
         ctx.strokeRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
 
         ctx.beginPath();
@@ -630,8 +671,8 @@ class GrasshopperPad {
         ctx.fillStyle = this.color;
         ctx.fill();
 
-        // Corner decorative arrows
-        ctx.fillStyle = 'rgba(57, 255, 20, 0.4)';
+        // Corner decorative arrows (Cyan transparency)
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.4)';
         ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, 6, 2);
         ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, 2, 6);
         ctx.fillRect(this.x + this.size / 2 - 6, this.y - this.size / 2, 6, 2);

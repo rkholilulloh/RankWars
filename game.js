@@ -93,6 +93,7 @@ window.hpBoostFactor = hpBoostFactor;
 
 // Key mappings
 const keys = {};
+window.keys = keys;
 let mouseX = 0;
 let mouseY = 0;
 let isLeftMouseDown = false;
@@ -110,6 +111,7 @@ function initLobby() {
     setupKeyboardListeners();
     setupMouseListeners();
     setupRivalSelectors();
+    setupSquadModeUI();
 }
 
 function setupRivalSelectors() {
@@ -153,10 +155,10 @@ const agentPresets = {
 };
 window.agentPresets = agentPresets;
 
-let selectedAgent = 'yuma';
+let selectedAgent = 'osamu';
 let activeBriefcase = {
-    main: ["Scorpion", "Grasshopper", "Shield", "Empty"],
-    sub: ["Scorpion", "Shield", "Bagworm", "Empty"]
+    main: ["Raygust", "Asteroid", "Shield", "Empty"],
+    sub: ["Thruster", "Spider", "Shield", "Bagworm"]
 };
 
 function setupAgentSelectors() {
@@ -480,11 +482,18 @@ function setupMouseListeners() {
         // Scale from CSS display size to canvas internal resolution
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        mouseX = (e.clientX - rect.left) * scaleX;
-        mouseY = (e.clientY - rect.top) * scaleY;
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        }
+        mouseX = (clientX - rect.left) * scaleX;
+        mouseY = (clientY - rect.top) * scaleY;
     };
 
     canvas.addEventListener('mousemove', updateMousePos);
+    canvas.addEventListener('touchmove', updateMousePos, { passive: false });
 
     canvas.addEventListener('mousedown', (e) => {
         updateMousePos(e);
@@ -505,10 +514,37 @@ function setupMouseListeners() {
         if (e.button === 2) isRightMouseDown = true;
     });
 
+    let lastTap = 0;
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        updateMousePos(e);
+        window.audio.init();
+        window.audio.resume();
+
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+
+        if (tapLength < 300 && tapLength > 0) {
+            // Double tap - right click
+            isRightMouseDown = true;
+            isLeftMouseDown = false;
+        } else {
+            // Single tap - left click
+            isLeftMouseDown = true;
+
+            const activeTrig = player.briefcase.main[player.activeMainIndex];
+            if (activeTrig === 'Viper') {
+                isDrawingViper = true;
+                const wm = getWorldMouse();
+                tempViperWaypoints = [{ x: wm.x, y: wm.y }];
+            }
+        }
+        lastTap = currentTime;
+    }, { passive: false });
+
     window.addEventListener('mouseup', (e) => {
         if (e.button === 0) {
             isLeftMouseDown = false;
-
             // Trigger Viper projectile release
             if (isDrawingViper) {
                 isDrawingViper = false;
@@ -516,6 +552,15 @@ function setupMouseListeners() {
             }
         }
         if (e.button === 2) isRightMouseDown = false;
+    });
+
+    window.addEventListener('touchend', (e) => {
+        isLeftMouseDown = false;
+        isRightMouseDown = false;
+        if (isDrawingViper) {
+            isDrawingViper = false;
+            fireViperWaypoints();
+        }
     });
 
     // Resize camera using scroll wheel for snipers
@@ -541,6 +586,40 @@ function setupMouseListeners() {
     if (bailoutScreen) {
         bailoutScreen.addEventListener('contextmenu', e => e.preventDefault());
     }
+
+    // HUD Clicks for Mobile/Desktop
+    document.querySelectorAll('.hud-slot-card').forEach(card => {
+        card.addEventListener('click', () => {
+            const key = card.getAttribute('data-key');
+            if (!matchActive || !player) return;
+            if (key === '1') player.activeMainIndex = 0;
+            if (key === '2') player.activeMainIndex = 1;
+            if (key === '3') player.activeMainIndex = 2;
+            if (key === '4') player.activeMainIndex = 3;
+            if (key === 'Q') player.activeSubIndex = 0;
+            if (key === 'E') player.activeSubIndex = 1;
+            if (key === 'R') player.activeSubIndex = 2;
+            if (key === 'F') player.activeSubIndex = 3;
+        });
+    });
+
+    const compositeIndicator = document.getElementById('composite-indicator');
+    if (compositeIndicator) {
+        compositeIndicator.addEventListener('click', () => {
+            if (!matchActive || !player) return;
+            keys[' '] = true; // Simulate spacebar press
+            setTimeout(() => { keys[' '] = false; }, 100);
+        });
+    }
+
+    const leadIndicator = document.getElementById('lead-indicator');
+    if (leadIndicator) {
+        // Toggle Shift for Lead Bullet on mobile click
+        leadIndicator.addEventListener('click', () => {
+            if (!matchActive || !player) return;
+            keys['SHIFT'] = !keys['SHIFT'];
+        });
+    }
 }
 
 /* ==========================================================================
@@ -548,6 +627,16 @@ function setupMouseListeners() {
    ========================================================================== */
 
 function startSimulation() {
+    if (window.gameMode === 'squad') {
+        startSquadSimulation();
+        return;
+    }
+
+    if (window.isMultiplayer && window.multiplayerManager) {
+        window.multiplayerManager.setupMultiplayerMatch();
+        return;
+    }
+
     // 1. Hide Lobby Screen, Show Arena HUD
     document.getElementById('lobby-screen').classList.remove('active');
     document.getElementById('game-screen').classList.add('active');
@@ -679,6 +768,10 @@ function startSimulation() {
         isDashing: false,
         dashTimer: 0,
         stunTimer: 0, // Initialize stunTimer for Gimlet stuns
+        compositeChargeTimer: 0,
+        compositeSilenceTimer: 0,
+        compositeFusionType: null,
+
 
         // active briefcase setup slots indices
         briefcase: {
@@ -792,7 +885,7 @@ function startSimulation() {
             // Active leakage if HP falls below 50%
             if (this.bodyHp < this.bodyHpMax * 0.5 && !this.isLeaking) {
                 this.isLeaking = true;
-                this.leakRate = 10; // 10 points per second passively
+                this.leakRate = 3; // 3 points per second passively
                 addLog(`[WARNING] ${this.name} Trion Body damaged below 50%! Passive Trion Leakage activated!`, 'kill');
             }
 
@@ -842,7 +935,7 @@ function startSimulation() {
     const usedSpawnPoints = [];
     const totalAgentsCount = 1 + selectedRivals.length;
     const mapArea = arena.width * arena.height;
-    
+
     // Scale target minimum spawn distance based on density
     let targetMinDist = 420;
     const areaPerAgent = mapArea / totalAgentsCount;
@@ -855,9 +948,9 @@ function startSimulation() {
             // Margin of 90px to prevent spawning too close to borders
             const rx = Math.random() * (arena.width - 180) + 90;
             const ry = Math.random() * (arena.height - 180) + 90;
-            
+
             if (arena.isWall(rx, ry)) continue;
-            
+
             // Check if too close to already chosen spawn points
             let tooClose = false;
             for (const pt of existingPoints) {
@@ -872,12 +965,12 @@ function startSimulation() {
                 return { x: rx, y: ry };
             }
         }
-        
+
         // Relax distance constraint if solver fails
         if (minDist > 60) {
             return getDynamicSpawnPoint(existingPoints, minDist - 35);
         }
-        
+
         // Walkability fallback
         for (let attempt = 0; attempt < 250; attempt++) {
             const rx = Math.random() * (arena.width - 120) + 60;
@@ -886,13 +979,18 @@ function startSimulation() {
                 return { x: rx, y: ry };
             }
         }
-        
+
         // Final coordinate safety point
         return { x: 100, y: 100 };
     };
 
     // Spawn player at dynamically chosen spawn point
-    const playerSpawn = getDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+    let playerSpawn = null;
+    if (window.isMultiplayer && window.multiplayerManager && window.multiplayerManager.localSpawnPoint) {
+        playerSpawn = window.multiplayerManager.localSpawnPoint;
+    } else {
+        playerSpawn = getDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+    }
     usedSpawnPoints.push(playerSpawn);
     player.x = playerSpawn.x;
     player.y = playerSpawn.y;
@@ -913,34 +1011,48 @@ function startSimulation() {
     allAgents.length = 0;
     allAgents.push(player);
 
-
-
-    selectedRivals.forEach((rival, i) => {
-        const ai = new window.AIAgent(`ai_${i}`, rival.name, rival.preset, gameDifficulty);
-
-        // Spawn AI dynamically at spaced, varied coordinates
-        const aiSpawn = getDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
-        usedSpawnPoints.push(aiSpawn);
-        ai.x = aiSpawn.x;
-        ai.y = aiSpawn.y;
-
-        // Activate initial Bagworm on AI if equipped (with 65% chance so not all enemies start with it active)
-        let aiBgwMainIdx = ai.briefcase.main.indexOf('Bagworm');
-        let aiBgwSubIdx = ai.briefcase.sub.indexOf('Bagworm');
-        if ((aiBgwMainIdx !== -1 || aiBgwSubIdx !== -1) && Math.random() < 0.65) {
-            if (aiBgwMainIdx !== -1) {
-                ai.activeMain = aiBgwMainIdx;
-                ai.isBagwormActive = true;
-            } else if (aiBgwSubIdx !== -1) {
-                ai.activeSub = aiBgwSubIdx;
-                ai.isBagwormActive = true;
-            }
-        } else {
-            ai.isBagwormActive = false;
+    // Multiplayer Hook: Broadcast damage and HP changes to the LAN lobby
+    const originalTakeDamage = player.takeDamage;
+    player.takeDamage = function (amount, attackerId, isLeadBullet = false, bulletType = '') {
+        originalTakeDamage.call(this, amount, attackerId, isLeadBullet, bulletType);
+        if (window.isMultiplayer && window.multiplayerManager) {
+            window.multiplayerManager.sendPlayerDamage(this.bodyHp, this.trion, attackerId, isLeadBullet, bulletType);
         }
+    };
 
-        allAgents.push(ai);
-    });
+    if (!window.isMultiplayer) {
+        selectedRivals.forEach((rival, i) => {
+            const ai = new window.AIAgent(`ai_${i}`, rival.name, rival.preset, gameDifficulty);
+
+            // Spawn AI dynamically at spaced, varied coordinates
+            const aiSpawn = getDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+            usedSpawnPoints.push(aiSpawn);
+            ai.x = aiSpawn.x;
+            ai.y = aiSpawn.y;
+
+            // Activate initial Bagworm on AI if equipped (with 65% chance so not all enemies start with it active)
+            let aiBgwMainIdx = ai.briefcase.main.indexOf('Bagworm');
+            let aiBgwSubIdx = ai.briefcase.sub.indexOf('Bagworm');
+            if ((aiBgwMainIdx !== -1 || aiBgwSubIdx !== -1) && Math.random() < 0.65) {
+                if (aiBgwMainIdx !== -1) {
+                    ai.activeMain = aiBgwMainIdx;
+                    ai.isBagwormActive = true;
+                } else if (aiBgwSubIdx !== -1) {
+                    ai.activeSub = aiBgwSubIdx;
+                    ai.isBagwormActive = true;
+                }
+            } else {
+                ai.isBagwormActive = false;
+            }
+
+            allAgents.push(ai);
+        });
+    } else {
+        // Spawning remote human competitors into our game fields!
+        if (window.multiplayerManager) {
+            window.multiplayerManager.spawnRemotePlayersIntoField();
+        }
+    }
 
     // Initialize scores
     scoreBoard = {};
@@ -950,14 +1062,17 @@ function startSimulation() {
     updateHUDSlotLabels();
 
     gameTime = 300 * 60; // 5:00 at 60fps
-    matchActive = true;
 
     // Clear status feed logs
     document.getElementById('game-logs').innerHTML = '';
-    addLog("[SYSTEM] Rank Wars Match Commenced! Deploying triggers...", 'system');
+    addLog("[SYSTEM] Tactical Deployment Phase - Assessing battlefield positions...", 'system');
 
-    // Run Gameloop
-    requestAnimationFrame(gameLoop);
+    // Launch pre-match countdown
+    startCountdown(() => {
+        matchActive = true;
+        addLog("[SYSTEM] Rank Wars Match Commenced! Deploying triggers...", 'system');
+        requestAnimationFrame(gameLoop);
+    });
 }
 
 function updateHUDSlotLabels() {
@@ -985,10 +1100,20 @@ function gameLoop() {
     updatePlayerInputPhysics();
 
     // Update camera follow centering on player
-    camera.x = player.x - camera.width / 2;
-    camera.y = player.y - camera.height / 2;
+    if (player && !player.bailedOut) {
+        camera.x = player.x - camera.width / 2;
+        camera.y = player.y - camera.height / 2;
+    } else {
+        // Player has bailed out! Allow manual camera scrolling using WASD keys
+        const scrollSpeed = 10;
+        if (keys['W'] || keys['w']) camera.y -= scrollSpeed;
+        if (keys['S'] || keys['s']) camera.y += scrollSpeed;
+        if (keys['A'] || keys['a']) camera.x -= scrollSpeed;
+        if (keys['D'] || keys['d']) camera.x += scrollSpeed;
+    }
     camera.x = Math.max(0, Math.min(camera.x, arena.width - camera.width));
     camera.y = Math.max(0, Math.min(camera.y, arena.height - camera.height));
+
 
     updateProjectilesAndInteractives();
     updateAIAgents();
@@ -1002,11 +1127,34 @@ function gameLoop() {
     renderScoreLeaderboard();
 
     // Check match completion
-    // Don't auto-end when trion is 0; agents at 0 trion are still alive until hit
-    const aliveAgents = allAgents.filter(a => !a.bailedOut);
-    if (gameTime <= 0 || player.bailedOut || aliveAgents.length <= 1) {
-        endSimulationMatch();
-        return;
+    if (window.gameMode === 'squad') {
+        const teamsWithSurvivors = new Set();
+        allAgents.forEach(a => {
+            if (!a.bailedOut && a.teamId) {
+                teamsWithSurvivors.add(a.teamId);
+            }
+        });
+
+        // Award survival bonus if only 1 team remains active or match timer runs out
+        if (teamsWithSurvivors.size <= 1 || gameTime <= 0) {
+            if (!window.survivalPointsAwarded) {
+                window.survivalPointsAwarded = true;
+                if (teamsWithSurvivors.size === 1) {
+                    const survivingTeamId = Array.from(teamsWithSurvivors)[0];
+                    if (!window.teamScores) window.teamScores = { 1: 0, 2: 0, 3: 0 };
+                    window.teamScores[survivingTeamId] += 2;
+                    addLog(`[TACTICAL] SQUAD ${survivingTeamId} receives +2 Survival Points Bonus!`, 'system');
+                }
+            }
+            endSimulationMatch();
+            return;
+        }
+    } else {
+        const aliveAgents = allAgents.filter(a => !a.bailedOut);
+        if (gameTime <= 0 || player.bailedOut || aliveAgents.length <= 1) {
+            endSimulationMatch();
+            return;
+        }
     }
 
     requestAnimationFrame(gameLoop);
@@ -1025,6 +1173,37 @@ function updatePlayerInputPhysics() {
     // Decrement trigger cooldowns
     if (player.cooldowns.main > 0) player.cooldowns.main -= 16.67;
     if (player.cooldowns.sub > 0) player.cooldowns.sub -= 16.67;
+
+    // Decrement composite silence timer
+    if (player.compositeSilenceTimer && player.compositeSilenceTimer > 0) {
+        player.compositeSilenceTimer -= 16.67;
+        if (player.compositeSilenceTimer < 0) player.compositeSilenceTimer = 0;
+    }
+
+    // Handle composite charging delay freeze
+    if (player.compositeChargeTimer && player.compositeChargeTimer > 0) {
+        player.compositeChargeTimer -= 16.67;
+        player.vx = 0;
+        player.vy = 0;
+        player.isShieldActive = false; // block shield activation
+
+        if (player.compositeChargeTimer <= 0) {
+            player.compositeChargeTimer = 0;
+            fireCompositeBulletFinal();
+        }
+
+        // Block standard keyboard movement updates / triggers
+        player.x += player.vx;
+        player.y += player.vy;
+
+        const collision = arena.circleCollides(player.x, player.y, player.radius);
+        if (collision.collided) {
+            player.x = collision.x;
+            player.y = collision.y;
+        }
+        return; // Early return to prevent normal keyboard input and triggers!
+    }
+
 
     // Reset zoom when not holding a sniper
     const activeMainTrig = player.briefcase.main[player.activeMainIndex];
@@ -1278,7 +1457,13 @@ function executeTriggerAction(side) {
 
     // 🏹 SHOOTER TRIGGERS
     else if (config.category === 'shooter') {
+        if (player.compositeSilenceTimer && player.compositeSilenceTimer > 0) {
+            player.trion += config.trionCost; // Refund cost already deducted
+            addLog("[WARNING] Trion recovery in progress (Silenced/Recoil Cooldown)! Shields permitted.", "system");
+            return;
+        }
         const bulletType = trigName.toLowerCase();
+
 
         // Lead active check (using shift key or cross-hand optional trigger if equipped in opposite hand)
         const activeMainTrig = player.briefcase.main[player.activeMainIndex];
@@ -1701,6 +1886,76 @@ function performMoleClawStrike(damage) {
 }
 
 // Viper customizable path functions
+function simplifyViperPath(points) {
+    if (!points || points.length === 0) return [];
+    if (points.length <= 5) return points;
+
+    // We want to select at most 5 points (start, end, and up to 3 intermediate corner points)
+    const corners = [];
+    for (let i = 1; i < points.length - 1; i++) {
+        const prev = points[i - 1];
+        const curr = points[i];
+        const next = points[i + 1];
+
+        const a1 = Math.atan2(curr.y - prev.y, curr.x - prev.x);
+        const a2 = Math.atan2(next.y - curr.y, next.x - curr.x);
+        let diff = Math.abs(Math.atan2(Math.sin(a2 - a1), Math.cos(a2 - a1)));
+
+        corners.push({ index: i, angleChange: diff });
+    }
+
+    corners.sort((a, b) => b.angleChange - a.angleChange);
+
+    const selectedIndices = [0, points.length - 1];
+    const maxIntermediatePoints = 3;
+    for (let i = 0; i < Math.min(maxIntermediatePoints, corners.length); i++) {
+        selectedIndices.push(corners[i].index);
+    }
+
+    selectedIndices.sort((a, b) => a - b);
+
+    const finalPoints = [];
+    let lastPt = null;
+    for (let idx of selectedIndices) {
+        const pt = points[idx];
+        if (!lastPt) {
+            finalPoints.push(pt);
+            lastPt = pt;
+        } else {
+            const dx = pt.x - lastPt.x;
+            const dy = pt.y - lastPt.y;
+            if (Math.sqrt(dx * dx + dy * dy) > 25 || idx === points.length - 1) {
+                finalPoints.push(pt);
+                lastPt = pt;
+            }
+        }
+    }
+
+    while (finalPoints.length > 5) {
+        let minIdx = -1;
+        let minChange = 999;
+        for (let i = 1; i < finalPoints.length - 1; i++) {
+            const prev = finalPoints[i - 1];
+            const curr = finalPoints[i];
+            const next = finalPoints[i + 1];
+            const a1 = Math.atan2(curr.y - prev.y, curr.x - prev.x);
+            const a2 = Math.atan2(next.y - curr.y, next.x - curr.x);
+            let diff = Math.abs(Math.atan2(Math.sin(a2 - a1), Math.cos(a2 - a1)));
+            if (diff < minChange) {
+                minChange = diff;
+                minIdx = i;
+            }
+        }
+        if (minIdx !== -1) {
+            finalPoints.splice(minIdx, 1);
+        } else {
+            break;
+        }
+    }
+
+    return finalPoints;
+}
+
 function fireViperWaypoints(side = 'main') {
     const viperConfig = window.TRIGGER_CATALOG["Viper"];
     if (tempViperWaypoints.length < 2) {
@@ -1722,6 +1977,9 @@ function fireViperWaypoints(side = 'main') {
         return;
     }
     player.trion -= viperConfig.trionCost;
+
+    // Simplify raw hand-drawn mouse line to at most 4 sharp turns (5 points)
+    const simplifiedWps = simplifyViperPath(tempViperWaypoints);
 
     // Shoot 5 Viper bullets along the drawn waypoints sequentially
     window.audio.playShoot('viper');
@@ -1756,7 +2014,7 @@ function fireViperWaypoints(side = 'main') {
                     damage: leadActive ? 0 : window.TRIGGER_CATALOG["Viper"].damage,
                     speed: window.TRIGGER_CATALOG["Viper"].speed,
                     ownerId: 'player',
-                    waypoints: tempViperWaypoints.map(wp => ({ x: wp.x + ox, y: wp.y + oy })),
+                    waypoints: simplifiedWps.map(wp => ({ x: wp.x + ox, y: wp.y + oy })),
                     isLeadBullet: leadActive,
                     color: leadActive ? '#121212' : '#ffc107',
                     size: leadActive ? 12 : 8
@@ -1767,7 +2025,7 @@ function fireViperWaypoints(side = 'main') {
                     damage: leadActive ? 0 : window.TRIGGER_CATALOG["Viper"].damage,
                     speed: window.TRIGGER_CATALOG["Viper"].speed,
                     ownerId: 'player',
-                    waypoints: tempViperWaypoints.map(wp => ({ x: wp.x - ox, y: wp.y - oy })),
+                    waypoints: simplifiedWps.map(wp => ({ x: wp.x - ox, y: wp.y - oy })),
                     isLeadBullet: leadActive,
                     color: leadActive ? '#121212' : '#ffc107',
                     size: leadActive ? 12 : 8
@@ -1778,7 +2036,7 @@ function fireViperWaypoints(side = 'main') {
                     damage: leadActive ? 0 : window.TRIGGER_CATALOG["Viper"].damage,
                     speed: window.TRIGGER_CATALOG["Viper"].speed,
                     ownerId: 'player',
-                    waypoints: tempViperWaypoints,
+                    waypoints: simplifiedWps,
                     isLeadBullet: leadActive,
                     color: leadActive ? '#121212' : '#ffc107',
                     size: leadActive ? 12 : 8
@@ -1886,6 +2144,10 @@ function fireViperZigzag(side = 'main') {
 function executeCompositeFusion() {
     if (player.isChameleonActive) return; // Chameleon locks slots and blocks composite fusions!
 
+    // Block if already charging or in recovery silence
+    if (player.compositeChargeTimer && player.compositeChargeTimer > 0) return;
+    if (player.compositeSilenceTimer && player.compositeSilenceTimer > 0) return;
+
     const leftTrig = player.briefcase.main[player.activeMainIndex];
     const rightTrig = player.briefcase.sub[player.activeSubIndex];
 
@@ -1907,9 +2169,6 @@ function executeCompositeFusion() {
     } else if (leftTrig === 'Hound' && rightTrig === 'Hound') {
         fusionType = 'hornet';
         trionCost = 80;
-    } else if (leftTrig === 'Viper' && rightTrig === 'Viper') {
-        // fusionType = 'striker';
-        // trionCost = 80;
     }
 
     if (!fusionType) {
@@ -1922,7 +2181,22 @@ function executeCompositeFusion() {
         return;
     }
 
+    // Spend Trion
     player.trion -= trionCost;
+
+    // Enter charging phase!
+    player.compositeChargeTimer = 1800; // 1.8 seconds at 60fps (16.67ms increments)
+    player.compositeFusionType = fusionType;
+
+    // Deactivate active shields
+    player.isShieldActive = false;
+
+    addLog(`[TACTICAL] COMPOSITE FUSION: Fusing triggers into ${fusionType.toUpperCase()}... Hold position!`, "system");
+}
+
+function fireCompositeBulletFinal() {
+    const fusionType = player.compositeFusionType;
+    if (!fusionType) return;
 
     if (fusionType === 'gimlet') {
         window.audio.playShoot('meteora');
@@ -1940,7 +2214,7 @@ function executeCompositeFusion() {
     else if (fusionType === 'tomahawk') {
         window.audio.playShoot('meteora');
         // If the player drew Viper waypoints, Tomahawk curves along them! Otherwise homing tracks.
-        const wps = (tempViperWaypoints && tempViperWaypoints.length >= 2) ? [...tempViperWaypoints] : null;
+        const wps = (tempViperWaypoints && tempViperWaypoints.length >= 2) ? simplifyViperPath(tempViperWaypoints) : null;
         bullets.push(new window.Bullet(player.x, player.y, player.angle, {
             type: 'tomahawk',
             damage: 400,
@@ -2011,28 +2285,22 @@ function executeCompositeFusion() {
             }, i * 120);
         }
     }
-    else if (fusionType === 'striker') {
-        addLog("[TACTICAL] COMPOSITE FUSION: Striker extreme high-speed zigzag sweeps deployed!", "system");
-        for (let i = 0; i < 5; i++) {
-            setTimeout(() => {
-                if (!matchActive || player.bailedOut) return;
-                bullets.push(new window.Bullet(player.x, player.y, player.angle, {
-                    type: 'striker',
-                    damage: 280,
-                    speed: 16,
-                    ownerId: 'player',
-                    color: '#e040fb',
-                    size: 9,
-                    isComposite: true
-                }));
-                window.audio.playShoot('viper');
-            }, i * 100);
-        }
-    }
 
-    player.cooldowns.main = 1500;
-    player.cooldowns.sub = 1500;
+    // Apply Physical Recoil (push backward)
+    const recoilSpeed = 9;
+    player.vx = Math.cos(player.angle + Math.PI) * recoilSpeed;
+    player.vy = Math.sin(player.angle + Math.PI) * recoilSpeed;
+    player.isDashing = true;
+    player.dashTimer = 10; // slide backward naturally
+
+    // Apply Recoil Cooldown & Silence (3 seconds)
+    player.compositeSilenceTimer = 3000;
+    player.cooldowns.main = 3000;
+    player.cooldowns.sub = 3000;
+
+    player.compositeFusionType = null;
 }
+
 
 /* ==========================================================================
    ENTITIES UPDATE LOOPS (Bullets, AI, Wires, Pads)
@@ -2058,7 +2326,19 @@ function updateProjectilesAndInteractives() {
                 if (b.type === 'meteora' || b.type === 'tomahawk' || b.type === 'salamander') {
                     b.triggerExplosion(arena, allAgents);
                 } else {
-                    agent.takeDamage(b.damage, b.ownerId, b.isLeadBullet, b.type);
+                    if (window.isMultiplayer) {
+                        // In multiplayer, I only apply damage to myself from bullets locally.
+                        // Remote players compute their hits on their own screens and replicate HP updates.
+                        if (agent.id === 'player') {
+                            agent.takeDamage(b.damage, b.ownerId, b.isLeadBullet, b.type);
+                        } else {
+                            if (window.spawnSparks) {
+                                window.spawnSparks(b.x, b.y, '#bd00ff', 4);
+                            }
+                        }
+                    } else {
+                        agent.takeDamage(b.damage, b.ownerId, b.isLeadBullet, b.type);
+                    }
                 }
                 b.life = 0; // Destroy projectile
                 break;
@@ -2245,6 +2525,25 @@ function triggerBailOut(agentId, reason) {
     }
     scoreBoard[killerId]++;
     addLog(`[SCORE] ${winner} awarded +1 Point!`, 'system');
+
+    // Squad Rank Wars additions
+    if (window.gameMode === 'squad') {
+        const killer = allAgents.find(a => a.id === killerId);
+        if (killer && killer.teamId) {
+            if (!window.teamScores) window.teamScores = { 1: 0, 2: 0, 3: 0 };
+            window.teamScores[killer.teamId]++;
+            addLog(`[SCORE] Team ${killer.teamId} awarded +1 Point! (Total: ${window.teamScores[killer.teamId]} Pts)`, 'system');
+        }
+
+        if (agent.teamId) {
+            const teamMembers = allAgents.filter(a => a.teamId === agent.teamId);
+            const aliveMembers = teamMembers.filter(a => !a.bailedOut);
+            if (aliveMembers.length === 0 && !window.squadWipedLog[agent.teamId]) {
+                window.squadWipedLog[agent.teamId] = true;
+                addLog(`[TACTICAL] SQUAD ${agent.teamId} ELIMINATED!`, 'kill');
+            }
+        }
+    }
 }
 
 /* ==========================================================================
@@ -2272,25 +2571,43 @@ function renderArenaCanvas() {
     grPads.forEach(p => p.draw(ctx));
 
     // 3. Draw active waypoints drawn for Viper in real-time
-    if (isDrawingViper && tempViperWaypoints.length > 1) {
+    if (isDrawingViper && tempViperWaypoints.length >= 1) {
         ctx.save();
-        ctx.strokeStyle = 'rgba(255, 223, 0, 0.6)';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(189, 0, 255, 0.8)';
+        ctx.lineWidth = 3.5;
         ctx.setLineDash([5, 5]);
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#bd00ff';
         ctx.beginPath();
-        ctx.moveTo(tempViperWaypoints[0].x, tempViperWaypoints[0].y);
-        for (let i = 1; i < tempViperWaypoints.length; i++) {
-            ctx.lineTo(tempViperWaypoints[i].x, tempViperWaypoints[i].y);
+
+        const drawWps = simplifyViperPath(tempViperWaypoints);
+        if (drawWps.length > 0) {
+            ctx.moveTo(drawWps[0].x, drawWps[0].y);
+            for (let i = 1; i < drawWps.length; i++) {
+                ctx.lineTo(drawWps[i].x, drawWps[i].y);
+            }
+            ctx.stroke();
+
+            // Draw small glowing square nodes at each corner point!
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00f0ff';
+            drawWps.forEach((wp) => {
+                ctx.fillRect(wp.x - 3, wp.y - 3, 6, 6);
+            });
         }
-        ctx.stroke();
         ctx.restore();
 
         // Check and track dragging mouse points
         if (tempViperWaypoints.length < 50) { // Limit waypoint complexity
             const wm = getWorldMouse();
-            tempViperWaypoints.push({ x: wm.x, y: wm.y });
+            const last = tempViperWaypoints[tempViperWaypoints.length - 1];
+            const dx = wm.x - last.x;
+            const dy = wm.y - last.y;
+            // Only add if mouse moved slightly to prevent stacking same coordinate
+            if (Math.sqrt(dx * dx + dy * dy) > 5) {
+                tempViperWaypoints.push({ x: wm.x, y: wm.y });
+            }
         }
     }
 
@@ -2409,6 +2726,11 @@ function drawPlayerCharacter() {
         subShieldActiveDraw = !player.isChameleonActive && (hasShieldSub && isRightMouseDown) && player.trion > 0;
     }
 
+    if (player.compositeChargeTimer && player.compositeChargeTimer > 0) {
+        mainShieldActiveDraw = false;
+        subShieldActiveDraw = false;
+    }
+
     if (mainShieldActiveDraw || subShieldActiveDraw) {
         ctx.save();
         const isFull = mainShieldActiveDraw && subShieldActiveDraw;
@@ -2448,7 +2770,49 @@ function drawPlayerCharacter() {
         ctx.restore();
     }
 
+    // Draw Fusing Composite Trion Cubes!
+    if (player.compositeChargeTimer && player.compositeChargeTimer > 0) {
+        ctx.save();
+        const progress = (1800 - player.compositeChargeTimer) / 1800;
+        const shift = progress * 30; // move from 30px to 0px
+
+        let cubeColor = '#ffd700'; // gold fallback
+        if (player.compositeFusionType === 'tomahawk') cubeColor = '#ff5722';
+        else if (player.compositeFusionType === 'salamander') cubeColor = '#ff9800';
+        else if (player.compositeFusionType === 'hornet') cubeColor = '#bd00ff';
+        else if (player.compositeFusionType === 'cobra') cubeColor = '#00e5ff';
+
+        ctx.shadowBlur = 8 + progress * 12;
+        ctx.shadowColor = cubeColor;
+        ctx.fillStyle = cubeColor;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+
+        if (progress < 0.9) {
+            // Draw two smaller cubes approaching
+            const size = 6 + progress * 4;
+            const leftY = -30 + shift;
+            const rightY = 30 - shift;
+
+            // Left cube
+            ctx.fillRect(-size / 2, leftY - size / 2, size, size);
+            ctx.strokeRect(-size / 2, leftY - size / 2, size, size);
+
+            // Right cube
+            ctx.fillRect(-size / 2, rightY - size / 2, size, size);
+            ctx.strokeRect(-size / 2, rightY - size / 2, size, size);
+        } else {
+            // Fused! Draw a single large glowing cube in center
+            const size = 12 + (progress - 0.9) * 15;
+            ctx.shadowBlur = 20;
+            ctx.fillRect(-size / 2, -size / 2, size, size);
+            ctx.strokeRect(-size / 2, -size / 2, size, size);
+        }
+        ctx.restore();
+    }
+
     ctx.restore();
+
 
     // Player name floating text and HP bar
     if (!player.isChameleonActive) {
@@ -2458,7 +2822,8 @@ function drawPlayerCharacter() {
         ctx.font = '900 9px monospace';
         ctx.textAlign = 'center';
         const trionVal = Math.max(0, Math.floor(player.trion));
-        ctx.fillText(`${player.name.toUpperCase()} [${trionVal}/${player.trionMax}]`, player.x, player.y - 25);
+        const prefix = (window.gameMode === 'squad') ? '[T1] ' : '';
+        ctx.fillText(`${prefix}${player.name.toUpperCase()} [${trionVal}/${player.trionMax}]`, player.x, player.y - 25);
 
         // 2. Draw mini bars (HP Cyan & Trion Green)
         const barWidth = 40;
@@ -2595,8 +2960,8 @@ function renderTacticalRadar() {
     radarCtx.stroke();
 
     // Map all coordinates ratio scaled to radar bounding circular area
-    const scaleX = rMax / (arena.width / 2);
-    const scaleY = rMax / (arena.height / 2);
+    const scaleX = (rMax / (arena.width / 2)) * 0.70;
+    const scaleY = (rMax / (arena.height / 2)) * 0.70;
 
     // Apply circular clipping for structural rendering inside the radar face
     radarCtx.save();
@@ -2605,6 +2970,11 @@ function renderTacticalRadar() {
     radarCtx.clip();
 
     // Draw dynamic background fill based on map type for a premium tactical theme
+    const mapW = arena.width * scaleX;
+    const mapH = arena.height * scaleY;
+    const mapX = cx - mapW / 2;
+    const mapY = cy - mapH / 2;
+
     if (arena.mapType === 'forest_mountain') {
         radarCtx.fillStyle = 'rgba(46, 125, 50, 0.06)';
     } else if (arena.mapType === 'training_room') {
@@ -2614,12 +2984,13 @@ function renderTacticalRadar() {
     } else {
         radarCtx.fillStyle = 'rgba(255, 255, 255, 0.015)';
     }
-    radarCtx.fillRect(cx - rMax, cy - rMax, rMax * 2, rMax * 2);
+    radarCtx.fillRect(mapX, mapY, mapW, mapH);
 
     // Draw the boundary lines of the actual walkable arena map
-    radarCtx.strokeStyle = 'rgba(0, 240, 255, 0.08)';
-    radarCtx.lineWidth = 1;
-    radarCtx.strokeRect(cx - rMax, cy - rMax, rMax * 2, rMax * 2);
+    radarCtx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
+    radarCtx.lineWidth = 1.5;
+    radarCtx.strokeRect(mapX, mapY, mapW, mapH);
+
 
     // Loop through the 2D grid and render actual building block obstacles, mountains, and trees
     const tileW = arena.tileSize * scaleX;
@@ -2712,8 +3083,11 @@ function renderTacticalRadar() {
     allAgents.forEach(agent => {
         if (agent.bailedOut) return;
 
-        // Chameleon and Bagworm triggers HIDE agents completely from tactical screens
-        if (agent.id !== 'player') {
+        // Teammate/Ally check: in squad mode, same teamId, not player
+        const isAlly = (window.gameMode === 'squad') && (player && agent.teamId === player.teamId) && (agent.id !== 'player');
+
+        // Chameleon and Bagworm triggers HIDE agents completely from tactical screens (unless they are allies)
+        if (agent.id !== 'player' && !isAlly) {
             if (agent.isChameleonActive) return;
             if (agent.isBagwormActive) {
                 // Check if player has direct visual line of sight to this agent
@@ -2754,6 +3128,14 @@ function renderTacticalRadar() {
                 radarCtx.arc(tx, ty, 4.5, 0, Math.PI * 2);
                 radarCtx.fill();
             }
+        } else if (isAlly) {
+            // Teammate/Ally: glowing tactical cyan dot (bypasses Bagworm, shared feed)
+            radarCtx.fillStyle = '#00f0ff';
+            radarCtx.shadowBlur = 10;
+            radarCtx.shadowColor = '#00f0ff';
+            radarCtx.beginPath();
+            radarCtx.arc(tx, ty, 4.2, 0, Math.PI * 2);
+            radarCtx.fill();
         } else {
             // Enemy Competitor: glowing tactical red dot
             radarCtx.fillStyle = '#ff3b30';
@@ -2765,6 +3147,7 @@ function renderTacticalRadar() {
         }
         radarCtx.restore();
     });
+
 
     radarCtx.restore(); // Restore context to discard boundary clipping path
 }
@@ -2872,36 +3255,131 @@ function renderHUDLabels() {
 
 function renderScoreLeaderboard() {
     const list = document.getElementById('score-list');
+    if (!list) return;
     list.innerHTML = '';
 
-    // Sort agents by scored points
-    const sorted = [...allAgents].sort((a, b) => {
-        const scoreA = scoreBoard[a.id] || 0;
-        const scoreB = scoreBoard[b.id] || 0;
-        return scoreB - scoreA;
-    });
+    if (window.gameMode === 'squad') {
+        const teamColors = {
+            1: '#00f0ff',
+            2: '#ff5722',
+            3: '#bd00ff'
+        };
 
-    sorted.forEach((agent, idx) => {
-        const row = document.createElement('div');
-        row.className = `score-row ${agent.id === 'player' ? 'active' : ''}`;
+        const getTeamName = (teamId) => {
+            const presetSelect = document.getElementById(`squad-preset-${teamId}`);
+            const preset = presetSelect ? presetSelect.value : '';
+            if (preset === 'tamakoma') return 'Tamakoma-2';
+            if (preset === 'ninomiya') return 'Ninomiya Unit';
+            if (preset === 'kageura') return 'Kageura Unit';
+            if (preset === 'arafune') return 'Arafune Unit';
+            return `Team ${teamId}`;
+        };
 
-        let hpStatus = '';
-        if (agent.bailedOut) {
-            hpStatus = `<span class="hp-badge bailed-out">BAILED OUT</span>`;
-        } else {
-            const hpPct = Math.round((agent.bodyHp / agent.bodyHpMax) * 100);
-            const trionPct = Math.round((agent.trion / agent.trionMax) * 100);
-            const leakIndicator = agent.isLeaking ? `<span class="hp-badge leaking-pulse" style="background:#ff3b30; color:#fff; animation: flash 1s ease infinite alternate; margin-left:5px; font-size:0.65rem; padding:1px 3px; border-radius:2px; font-weight:700;">LEAKING</span>` : '';
-            hpStatus = `<span class="hp-badge alive-hp" style="background:rgba(0, 240, 255, 0.15); color:var(--border-cyan); border: 1px solid var(--border-cyan); padding: 1px 3px; border-radius: 2px; font-size: 0.65rem; font-weight: 700; margin-left: 5px;">${hpPct}% HP</span><span class="hp-badge alive-trion" style="background:rgba(57, 255, 20, 0.15); color:var(--border-green); border: 1px solid var(--border-green); padding: 1px 3px; border-radius: 2px; font-size: 0.65rem; font-weight: 700; margin-left: 5px;">${trionPct}% TRION</span>${leakIndicator}`;
-        }
+        // Render Squad summaries first
+        const sortedTeams = [1, 2, 3].sort((a, b) => (window.teamScores[b] || 0) - (window.teamScores[a] || 0));
 
-        row.innerHTML = `
-            <span class="rank">${idx + 1}</span>
-            <span class="name" style="display: flex; align-items: center; flex-wrap: wrap;">${agent.name}${hpStatus}</span>
-            <span class="score">${scoreBoard[agent.id] || 0} Pts</span>
-        `;
-        list.appendChild(row);
-    });
+        const squadSummaryContainer = document.createElement('div');
+        squadSummaryContainer.style.background = 'rgba(0,0,0,0.25)';
+        squadSummaryContainer.style.border = '1px solid rgba(0,240,255,0.15)';
+        squadSummaryContainer.style.borderRadius = '6px';
+        squadSummaryContainer.style.padding = '8px 10px';
+        squadSummaryContainer.style.marginBottom = '12px';
+        squadSummaryContainer.style.display = 'flex';
+        squadSummaryContainer.style.flexDirection = 'column';
+        squadSummaryContainer.style.gap = '6px';
+
+        const summaryHeader = document.createElement('div');
+        summaryHeader.style.fontSize = '0.75rem';
+        summaryHeader.style.fontWeight = '700';
+        summaryHeader.style.color = 'var(--text-accent)';
+        summaryHeader.style.fontFamily = 'var(--font-cyber)';
+        summaryHeader.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+        summaryHeader.style.paddingBottom = '4px';
+        summaryHeader.textContent = 'SQUAD STANDINGS';
+        squadSummaryContainer.appendChild(summaryHeader);
+
+        sortedTeams.forEach((teamId, idx) => {
+            const row = document.createElement('div');
+            row.style.display = 'flex';
+            row.style.justifyContent = 'space-between';
+            row.style.alignItems = 'center';
+            row.style.fontSize = '0.8rem';
+            row.style.fontWeight = '700';
+            row.style.color = teamColors[teamId];
+
+            row.innerHTML = `
+                <span>${idx + 1}. ${getTeamName(teamId).toUpperCase()}</span>
+                <span style="font-family: var(--font-cyber);">${window.teamScores[teamId] || 0} Pts</span>
+            `;
+            squadSummaryContainer.appendChild(row);
+        });
+        list.appendChild(squadSummaryContainer);
+
+        // Render Individual stats below
+        const sortedAgents = [...allAgents].sort((a, b) => (scoreBoard[b.id] || 0) - (scoreBoard[a.id] || 0));
+
+        const indivHeader = document.createElement('div');
+        indivHeader.style.fontSize = '0.7rem';
+        indivHeader.style.fontWeight = '700';
+        indivHeader.style.color = 'var(--text-secondary)';
+        indivHeader.style.fontFamily = 'var(--font-cyber)';
+        indivHeader.style.marginBottom = '6px';
+        indivHeader.textContent = 'INDIVIDUAL AGENT POINTS';
+        list.appendChild(indivHeader);
+
+        sortedAgents.forEach((agent, idx) => {
+            const row = document.createElement('div');
+            row.className = `score-row ${agent.id === 'player' ? 'active' : ''}`;
+            row.style.borderColor = teamColors[agent.teamId] || 'transparent';
+
+            let hpStatus = '';
+            if (agent.bailedOut) {
+                hpStatus = `<span class="hp-badge bailed-out">BAILED OUT</span>`;
+            } else {
+                const hpPct = Math.round((agent.bodyHp / agent.bodyHpMax) * 100);
+                const trionPct = Math.round((agent.trion / agent.trionMax) * 100);
+                const leakIndicator = agent.isLeaking ? `<span class="hp-badge leaking-pulse" style="background:#ff3b30; color:#fff; animation: flash 1s ease infinite alternate; margin-left:5px; font-size:0.65rem; padding:1px 3px; border-radius:2px; font-weight:700;">LEAKING</span>` : '';
+                hpStatus = `<span class="hp-badge alive-hp" style="background:rgba(0, 240, 255, 0.15); color:var(--border-cyan); border: 1px solid var(--border-cyan); padding: 1px 3px; border-radius: 2px; font-size: 0.65rem; font-weight: 700; margin-left: 5px;">${hpPct}% HP</span><span class="hp-badge alive-trion" style="background:rgba(57, 255, 20, 0.15); color:var(--border-green); border: 1px solid var(--border-green); padding: 1px 3px; border-radius: 2px; font-size: 0.65rem; font-weight: 700; margin-left: 5px;">${trionPct}% TRION</span>${leakIndicator}`;
+            }
+
+            const tTag = agent.teamId ? `<span style="color:${teamColors[agent.teamId]}; font-weight:900; margin-right:5px; font-family:var(--font-cyber);">[T${agent.teamId}]</span>` : '';
+
+            row.innerHTML = `
+                <span class="rank">${idx + 1}</span>
+                <span class="name" style="display: flex; align-items: center; flex-wrap: wrap;">${tTag}${agent.name}${hpStatus}</span>
+                <span class="score">${scoreBoard[agent.id] || 0} Pts</span>
+            `;
+            list.appendChild(row);
+        });
+    } else {
+        const sorted = [...allAgents].sort((a, b) => {
+            const scoreA = scoreBoard[a.id] || 0;
+            const scoreB = scoreBoard[b.id] || 0;
+            return scoreB - scoreA;
+        });
+
+        sorted.forEach((agent, idx) => {
+            const row = document.createElement('div');
+            row.className = `score-row ${agent.id === 'player' ? 'active' : ''}`;
+
+            let hpStatus = '';
+            if (agent.bailedOut) {
+                hpStatus = `<span class="hp-badge bailed-out">BAILED OUT</span>`;
+            } else {
+                const hpPct = Math.round((agent.bodyHp / agent.bodyHpMax) * 100);
+                const trionPct = Math.round((agent.trion / agent.trionMax) * 100);
+                const leakIndicator = agent.isLeaking ? `<span class="hp-badge leaking-pulse" style="background:#ff3b30; color:#fff; animation: flash 1s ease infinite alternate; margin-left:5px; font-size:0.65rem; padding:1px 3px; border-radius:2px; font-weight:700;">LEAKING</span>` : '';
+                hpStatus = `<span class="hp-badge alive-hp" style="background:rgba(0, 240, 255, 0.15); color:var(--border-cyan); border: 1px solid var(--border-cyan); padding: 1px 3px; border-radius: 2px; font-size: 0.65rem; font-weight: 700; margin-left: 5px;">${hpPct}% HP</span><span class="hp-badge alive-trion" style="background:rgba(57, 255, 20, 0.15); color:var(--border-green); border: 1px solid var(--border-green); padding: 1px 3px; border-radius: 2px; font-size: 0.65rem; font-weight: 700; margin-left: 5px;">${trionPct}% TRION</span>${leakIndicator}`;
+            }
+
+            row.innerHTML = `
+                <span class="rank">${idx + 1}</span>
+                <span class="name" style="display: flex; align-items: center; flex-wrap: wrap;">${agent.name}${hpStatus}</span>
+                <span class="score">${scoreBoard[agent.id] || 0} Pts</span>
+            `;
+            list.appendChild(row);
+        });
+    }
 }
 
 /* ==========================================================================
@@ -2922,6 +3400,10 @@ function togglePause() {
 
 // Pause actions binders
 document.getElementById('resume-btn').addEventListener('click', togglePause);
+document.getElementById('pause-redeploy-btn').addEventListener('click', () => {
+    document.getElementById('pause-screen').classList.remove('active');
+    startSimulation();
+});
 document.getElementById('pause-quit-btn').addEventListener('click', () => {
     document.getElementById('pause-screen').classList.remove('active');
     bailoutMatch();
@@ -2939,6 +3421,136 @@ function bailoutMatch() {
 
 function endSimulationMatch() {
     matchActive = false;
+
+    if (window.gameMode === 'squad') {
+        const sortedTeams = [1, 2, 3].sort((a, b) => (window.teamScores[b] || 0) - (window.teamScores[a] || 0));
+        const winnerTeamId = sortedTeams[0];
+        const isPlayerTeamWinner = winnerTeamId === 1;
+
+        const titleEl = document.getElementById('bailout-title');
+        const flasherEl = document.getElementById('bailout-flasher');
+        const boxEl = document.getElementById('bailout-container');
+
+        let resultColor = "";
+        let resultShadow = "";
+        let resultBg = "";
+        let titleText = "";
+        let flasherText = "";
+
+        const teamColors = {
+            1: '#00f0ff',
+            2: '#ff5722',
+            3: '#bd00ff'
+        };
+
+        const getTeamName = (teamId) => {
+            const presetSelect = document.getElementById(`squad-preset-${teamId}`);
+            const preset = presetSelect ? presetSelect.value : '';
+            if (preset === 'tamakoma') return 'Tamakoma-2';
+            if (preset === 'ninomiya') return 'Ninomiya Unit';
+            if (preset === 'kageura') return 'Kageura Unit';
+            if (preset === 'arafune') return 'Arafune Unit';
+            return `Team ${teamId}`;
+        };
+
+        if (isPlayerTeamWinner) {
+            resultColor = "#00f0ff";
+            resultShadow = "0 0 15px rgba(0, 240, 255, 0.6)";
+            resultBg = "rgba(0, 240, 255, 0.15)";
+            titleText = "VICTORY";
+            flasherText = `WINNING SQUAD: ${getTeamName(1).toUpperCase()} (${window.teamScores[1]} PTS)`;
+        } else {
+            resultColor = "#ff3b30";
+            resultShadow = "0 0 15px rgba(255, 59, 48, 0.6)";
+            resultBg = "rgba(255, 59, 48, 0.15)";
+            titleText = "DEFEAT";
+            flasherText = `WINNING SQUAD: ${getTeamName(winnerTeamId).toUpperCase()} (${window.teamScores[winnerTeamId]} PTS)`;
+        }
+
+        if (titleEl) {
+            titleEl.textContent = titleText;
+            titleEl.style.color = resultColor;
+            titleEl.style.textShadow = resultShadow;
+        }
+
+        if (flasherEl) {
+            flasherEl.textContent = flasherText;
+            flasherEl.style.background = resultBg;
+            flasherEl.style.color = resultColor;
+        }
+
+        if (boxEl) {
+            boxEl.style.borderColor = resultColor;
+            boxEl.style.boxShadow = `0 0 25px ${resultColor}`;
+        }
+
+        const scoreboardListEl = document.getElementById('final-scoreboard-list');
+        if (scoreboardListEl) {
+            scoreboardListEl.innerHTML = '';
+
+            const headerRow = document.createElement('div');
+            headerRow.className = 'detail-row';
+            headerRow.style.borderBottom = '1px solid rgba(255, 255, 255, 0.15)';
+            headerRow.style.paddingBottom = '6px';
+            headerRow.style.marginBottom = '8px';
+            headerRow.style.fontWeight = '700';
+            headerRow.style.color = 'var(--text-accent)';
+            headerRow.style.fontFamily = 'var(--font-cyber)';
+            headerRow.style.fontSize = '0.8rem';
+            headerRow.innerHTML = `
+                <span>SQUAD</span>
+                <span>STATUS</span>
+                <span>SCORE</span>
+            `;
+            scoreboardListEl.appendChild(headerRow);
+
+            sortedTeams.forEach((teamId) => {
+                const teamMembers = allAgents.filter(a => a.teamId === teamId);
+                const aliveMembers = teamMembers.filter(a => !a.bailedOut);
+                const isWiped = aliveMembers.length === 0;
+
+                const row = document.createElement('div');
+                row.className = 'detail-row';
+                row.style.display = 'flex';
+                row.style.flexDirection = 'column';
+                row.style.alignItems = 'stretch';
+                row.style.background = 'rgba(0, 0, 0, 0.2)';
+                row.style.border = `1px solid ${teamColors[teamId]}`;
+                row.style.margin = '6px 0';
+                row.style.padding = '8px 10px';
+                row.style.borderRadius = '5px';
+
+                let statusText = isWiped ? 'WIPED OUT' : 'ACTIVE SURVIVORS';
+                let statusColor = isWiped ? '#ff3b30' : 'var(--border-green)';
+
+                let squadMainHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 700; gap: 10px;">
+                        <span style="color: ${teamColors[teamId]};">${getTeamName(teamId).toUpperCase()} ${teamId === 1 ? '<span style="font-size:0.65rem; background:#00f0ff; color:#000; padding:1px 3px; border-radius:2px; font-weight:900; margin-left:5px;">YOURS</span>' : ''}</span>
+                        <span style="color: ${statusColor}; font-size: 0.8rem; font-family: var(--font-cyber); font-weight: 700;">${statusText}</span>
+                        <span style="font-family: var(--font-cyber); font-weight: 700; color: ${teamColors[teamId]}">${window.teamScores[teamId] || 0} PTS</span>
+                    </div>
+                `;
+
+                let membersHTML = `<div style="margin-top: 5px; padding-top: 5px; border-top: 1px dashed rgba(255,255,255,0.08); font-size: 0.75rem; color: rgba(255,255,255,0.7); display: flex; flex-direction: column; gap: 2px;">`;
+                teamMembers.forEach(m => {
+                    const statusLbl = m.bailedOut ? `<span style="color: #ff3b30;">[BAILED OUT]</span>` : `<span style="color: var(--border-green);">[ACTIVE]</span>`;
+                    membersHTML += `
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>${m.name} ${m.id === 'player' ? '<b>(YOU)</b>' : ''}</span>
+                            <span>${statusLbl} | Score: ${scoreBoard[m.id] || 0}</span>
+                        </div>
+                    `;
+                });
+                membersHTML += `</div>`;
+
+                row.innerHTML = squadMainHTML + membersHTML;
+                scoreboardListEl.appendChild(row);
+            });
+        }
+
+        document.getElementById('bailout-screen').classList.add('active');
+        return;
+    }
 
     // 1. Calculate standings
     const sorted = [...allAgents].sort((a, b) => (scoreBoard[b.id] || 0) - (scoreBoard[a.id] || 0));
@@ -3100,7 +3712,676 @@ document.getElementById('return-lobby-btn').addEventListener('click', () => {
     bailoutMatch();
 });
 
+/* ==========================================================================
+   PRE-MATCH COUNTDOWN SYSTEM
+   ========================================================================== */
+
+function startCountdown(onComplete) {
+    const overlay = document.getElementById('countdown-overlay');
+    const numberEl = document.getElementById('countdown-number');
+    const barFill = document.getElementById('countdown-bar-fill');
+    
+    if (!overlay || !numberEl) {
+        // Fallback: skip countdown if elements missing
+        if (onComplete) onComplete();
+        return;
+    }
+
+    let count = 5;
+    const totalSteps = 5;
+    
+    // Show overlay
+    overlay.classList.add('active');
+    numberEl.textContent = count;
+    numberEl.className = 'countdown-number';
+    barFill.style.width = '100%';
+
+    const countInterval = setInterval(() => {
+        count--;
+
+        if (count > 0) {
+            numberEl.textContent = count;
+            // Pop animation
+            numberEl.className = 'countdown-number pop';
+            setTimeout(() => {
+                numberEl.className = 'countdown-number';
+            }, 400);
+            // Update progress bar
+            barFill.style.width = `${(count / totalSteps) * 100}%`;
+        } else if (count === 0) {
+            // Show GO!
+            numberEl.textContent = 'GO!';
+            numberEl.className = 'countdown-number go-text';
+            barFill.style.width = '0%';
+        } else {
+            // count < 0, cleanup and start
+            clearInterval(countInterval);
+            overlay.classList.remove('active');
+            numberEl.textContent = '5';
+            numberEl.className = 'countdown-number';
+            barFill.style.width = '100%';
+            if (onComplete) onComplete();
+        }
+    }, 1000);
+}
+
+/* ==========================================================================
+   HOW TO PLAY MODAL LOGIC
+   ========================================================================== */
+
+function setupHowToPlayModal() {
+    const openBtn = document.getElementById('how-to-play-btn');
+    const modal = document.getElementById('how-to-play-modal');
+    const closeBtn = document.getElementById('htp-close-btn');
+    
+    if (!openBtn || !modal) return;
+
+    // Open modal
+    openBtn.addEventListener('click', () => {
+        modal.classList.add('active');
+    });
+
+    // Close modal via X button
+    closeBtn.addEventListener('click', () => {
+        modal.classList.remove('active');
+    });
+
+    // Close modal via clicking backdrop
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+        }
+    });
+
+    // Close modal via ESC key
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modal.classList.contains('active')) {
+            modal.classList.remove('active');
+        }
+    });
+
+    // Tab switching
+    const tabBtns = modal.querySelectorAll('.htp-tab-btn');
+    const tabContents = modal.querySelectorAll('.htp-tab-content');
+
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const targetTab = btn.getAttribute('data-htp-tab');
+
+            // Deactivate all tabs
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(tc => tc.classList.remove('active'));
+
+            // Activate the clicked tab
+            btn.classList.add('active');
+            const targetContent = document.getElementById(`htp-${targetTab}`);
+            if (targetContent) targetContent.classList.add('active');
+        });
+    });
+}
+
 // Run Setup on load
 window.addEventListener('DOMContentLoaded', () => {
     initLobby();
+    setupHowToPlayModal();
 });
+
+// ==========================================================================
+// MULTIPLAYER LAN / SSE EXPOSURES AND WRAPPERS
+// ==========================================================================
+
+// Expose core game engine structures globally
+window.bullets = bullets;
+window.grPads = grPads;
+window.particles = particles;
+window.allAgents = allAgents;
+
+// Expose key variables and functions to allow multiplayer.js to trigger match configurations
+window.getMatchActive = () => matchActive;
+window.setMatchActive = (val) => { matchActive = val; };
+window.getGameTime = () => gameTime;
+window.setGameTime = (val) => { gameTime = val; };
+window.getScoreBoard = () => scoreBoard;
+window.setScoreBoard = (val) => { scoreBoard = val; };
+window.setSelectedAgent = (val) => { selectedAgent = val; };
+window.getSelectedAgent = () => selectedAgent;
+window.getActiveBriefcase = () => activeBriefcase;
+window.triggerBailOutGlobal = (agentId, reason) => triggerBailOut(agentId, reason);
+window.endSimulationMatchGlobal = () => endSimulationMatch();
+window.addLogGlobal = (message, type) => addLog(message, type);
+
+// Hook bullets.push to capture and broadcast bullet spawns
+const originalBulletsPush = bullets.push;
+bullets.push = function (...args) {
+    const result = originalBulletsPush.apply(this, args);
+    if (window.isMultiplayer && window.multiplayerManager) {
+        args.forEach(bullet => {
+            // Only broadcast if the bullet was spawned by the local player
+            if (bullet.ownerId === player.id) {
+                window.multiplayerManager.broadcastBullet(bullet);
+            }
+        });
+    }
+    return result;
+};
+
+// Hook grPads.push to capture and broadcast Grasshopper pad spawns
+const originalGrPadsPush = grPads.push;
+grPads.push = function (...args) {
+    const result = originalGrPadsPush.apply(this, args);
+    if (window.isMultiplayer && window.multiplayerManager) {
+        args.forEach(pad => {
+            if (pad.ownerId === player.id) {
+                window.multiplayerManager.broadcastGrasshopper(pad.x, pad.y);
+            }
+        });
+    }
+    return result;
+};
+
+// Hook addSpiderWeb to capture and broadcast Spider wire placements
+const originalAddSpiderWeb = Arena.prototype.addSpiderWeb;
+Arena.prototype.addSpiderWeb = function (x1, y1, x2, y2, ownerId) {
+    const result = originalAddSpiderWeb.call(this, x1, y1, x2, y2, ownerId);
+    if (window.isMultiplayer && window.multiplayerManager && ownerId === player.id) {
+        window.multiplayerManager.broadcastSpiderWeb(x1, y1, x2, y2);
+    }
+    return result;
+};
+
+// Broadcast local coordinates at the end of the physics loop
+const originalUpdatePlayerInputPhysics = updatePlayerInputPhysics;
+updatePlayerInputPhysics = function () {
+    originalUpdatePlayerInputPhysics();
+    if (window.isMultiplayer && window.multiplayerManager && player && !player.bailedOut) {
+        window.multiplayerManager.sendPlayerUpdate();
+    }
+};
+
+/* ==========================================================================
+   BORDER SQUAD RANK WARS (SQUAD MODE ENGINE FUNCTIONS)
+   ========================================================================== */
+
+function findWalkableSpawnNear(centerX, centerY, index) {
+    const angle = (index * 45 * Math.PI) / 180;
+    const distance = 80 + Math.floor(index / 4) * 40;
+
+    let sx = centerX + Math.cos(angle) * distance;
+    let sy = centerY + Math.sin(angle) * distance;
+
+    if (arena && !arena.isWall(sx, sy) && sx > 50 && sx < arena.width - 50 && sy > 50 && sy < arena.height - 50) {
+        return { x: sx, y: sy };
+    }
+
+    for (let radius = 30; radius < 250; radius += 30) {
+        for (let a = 0; a < 360; a += 30) {
+            const rad = (a * Math.PI) / 180;
+            const px = centerX + Math.cos(rad) * radius;
+            const py = centerY + Math.sin(rad) * radius;
+            if (arena && !arena.isWall(px, py) && px > 50 && px < arena.width - 50 && py > 50 && py < arena.height - 50) {
+                return { x: px, y: py };
+            }
+        }
+    }
+    return { x: centerX, y: centerY };
+}
+
+function startSquadSimulation() {
+    document.getElementById('lobby-screen').classList.remove('active');
+    document.getElementById('game-screen').classList.add('active');
+
+    const mapSelect = document.getElementById('squad-map-select').value;
+    let mapWidth = 3200;
+    let mapHeight = 2900;
+    let mapDisplayName = "Cyber Grid Map";
+    let arenaType = 'cybergrid';
+
+    if (mapSelect.includes('cityscape')) {
+        arenaType = mapSelect.includes('large') ? 'cityscape_large' : 'cityscape';
+        mapDisplayName = "Cityscape Map";
+    } else if (mapSelect.includes('forest')) {
+        arenaType = 'forest_mountain';
+        mapDisplayName = "Forest & Mountain Map";
+    } else if (mapSelect.includes('training')) {
+        arenaType = 'training_room';
+        mapDisplayName = "Border Training Grid";
+    } else {
+        arenaType = 'cybergrid';
+        mapDisplayName = "Cyber Grid Plain";
+    }
+
+    if (mapSelect.includes('small')) {
+        mapWidth = 1200;
+        mapHeight = 1000;
+        mapDisplayName += " (Small)";
+    } else if (mapSelect.includes('medium')) {
+        mapWidth = 2000;
+        mapHeight = 1800;
+        mapDisplayName += " (Medium)";
+    } else {
+        if (mapSelect === 'cityscape_large') {
+            mapWidth = 3800;
+            mapHeight = 3200;
+        } else if (mapSelect.includes('forest')) {
+            mapWidth = 3500;
+            mapHeight = 3000;
+        } else if (mapSelect.includes('training')) {
+            mapWidth = 3600;
+            mapHeight = 3200;
+        } else {
+            mapWidth = 3200;
+            mapHeight = 2900;
+        }
+        mapDisplayName += " (Large)";
+    }
+
+    arena.init(arenaType, mapWidth, mapHeight);
+    document.getElementById('hud-map-name').textContent = mapDisplayName;
+
+    const squadTrionSelect = document.getElementById('squad-trion-boost-select');
+    trionBoostFactor = squadTrionSelect ? parseFloat(squadTrionSelect.value) : 2.0;
+    window.trionBoostFactor = trionBoostFactor;
+
+    const squadHpSelect = document.getElementById('squad-hp-boost-select');
+    hpBoostFactor = squadHpSelect ? parseFloat(squadHpSelect.value) : 1.0;
+    window.hpBoostFactor = hpBoostFactor;
+
+
+    const difficultySelect = document.getElementById('squad-difficulty-select');
+    gameDifficulty = difficultySelect ? difficultySelect.value : 'medium';
+
+    scoreBoard = {};
+    window.teamScores = { 1: 0, 2: 0, 3: 0 };
+    window.survivalPointsAwarded = false;
+    window.squadWipedLog = { 1: false, 2: false, 3: false };
+
+    bullets.length = 0;
+    grPads.length = 0;
+    particles.length = 0;
+    allAgents.length = 0;
+
+    const sizeSelect = document.getElementById('squad-size-select');
+    const squadSize = sizeSelect ? parseInt(sizeSelect.value, 10) : 3;
+
+    player = {
+        id: 'player',
+        name: (agentPresets[selectedAgent] && agentPresets[selectedAgent].name) || 'Custom Agent',
+        teamId: 1,
+        teamColor: '#00f0ff',
+        isCaptain: true,
+        x: 220,
+        y: 220,
+        vx: 0,
+        vy: 0,
+        radius: 18,
+        angle: 0,
+        speed: (agentPresets[selectedAgent] ? agentPresets[selectedAgent].speed : 3.5),
+        trionMax: (agentPresets[selectedAgent] ? agentPresets[selectedAgent].trion * 100 : 900) * trionBoostFactor,
+        trion: 0,
+        bodyHpMax: 1000 * hpBoostFactor,
+        bodyHp: 1000 * hpBoostFactor,
+        isLeaking: false,
+        leakRate: 0,
+        isWeighted: false,
+        weightStacks: 0,
+        isDashing: false,
+        dashTimer: 0,
+        stunTimer: 0,
+        compositeChargeTimer: 0,
+        compositeSilenceTimer: 0,
+        compositeFusionType: null,
+
+        briefcase: {
+            main: [...activeBriefcase.main],
+            sub: [...activeBriefcase.sub]
+        },
+        activeMainIndex: 0,
+        activeSubIndex: 0,
+        shieldAngle: 90,
+        isBagwormActive: false,
+        isChameleonActive: false,
+        bailedOut: false,
+        cooldowns: { main: 0, sub: 0 },
+
+        takeDamage(amount, attackerId, isLeadBullet = false, bulletType = '') {
+            if (this.bodyHp <= 0) {
+                triggerBailOut('player', 'Trion Body Destroyed');
+                return;
+            }
+
+            if (isLeadBullet) {
+                this.isWeighted = true;
+                let stacks = 1;
+                if (bulletType === 'egret') stacks = 2;
+                else if (bulletType === 'ibis') stacks = 4;
+                else if (bulletType === 'lightning') stacks = 1;
+
+                this.weightStacks = Math.min(5, this.weightStacks + stacks);
+                addLog(`[WARNING] Hit by black Lead Bullet! Total weight stacks: ${this.weightStacks}`, 'kill');
+                spawnSparks(this.x, this.y, '#121212', 10);
+                return;
+            }
+
+            const hasShieldMain = this.briefcase.main[this.activeMainIndex] === 'Shield';
+            const hasShieldSub = this.briefcase.sub[this.activeSubIndex] === 'Shield';
+            const bothAreShield = hasShieldMain && hasShieldSub;
+
+            let mainShieldActive = false;
+            let subShieldActive = false;
+
+            if (bothAreShield) {
+                const eitherPressed = isLeftMouseDown || isRightMouseDown;
+                mainShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
+                subShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
+            } else {
+                mainShieldActive = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.trion > 0;
+                subShieldActive = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.trion > 0;
+            }
+
+            const isFullShield = mainShieldActive && subShieldActive;
+            const isBlocked = this.isBlockingAngle(attackerId);
+            const isGimlet = bulletType === 'gimlet';
+
+            if (isBlocked && (!isGimlet || isFullShield)) {
+                if (isFullShield) {
+                    this.trion -= amount * 0.08;
+                    window.audio.playShieldBlock();
+                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ffd700', 16);
+                } else {
+                    this.trion -= amount * 0.25;
+                    window.audio.playShieldBlock();
+                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#39ff14', 12);
+                }
+                if (this.trion <= 0) this.trion = 0;
+                return;
+            }
+
+            let finalAmount = amount;
+            if (gameDifficulty === 'easy') {
+                finalAmount = Math.floor(amount * 0.6);
+            } else if (gameDifficulty === 'hard') {
+                finalAmount = Math.floor(amount * 1.25);
+            }
+
+            this.bodyHp -= finalAmount;
+            if (attackerId && attackerId !== this.id) {
+                this.lastAttackerId = attackerId;
+                this.lastAttackTime = Date.now();
+            }
+            spawnSparks(this.x, this.y, '#ff3b30', 8);
+
+            if (bulletType === 'gimlet') {
+                this.stunTimer = 20;
+                addLog(`[SYSTEM] ${this.name} is STUNNED by high-penetration Gimlet!`, 'system');
+            }
+
+            if (this.bodyHp < this.bodyHpMax * 0.5 && !this.isLeaking) {
+                this.isLeaking = true;
+                this.leakRate = 3;
+                addLog(`[WARNING] ${this.name} Trion Body damaged below 50%! Passive Trion Leakage activated!`, 'kill');
+            }
+
+            if (this.bodyHp <= 0) {
+                this.bodyHp = 0;
+                triggerBailOut('player', 'Trion Body Destroyed');
+            }
+        },
+
+        isBlockingAngle(attackerId) {
+            if (this.trion <= 0) return false;
+            const hasShieldMain = this.briefcase.main[this.activeMainIndex] === 'Shield';
+            const hasShieldSub = this.briefcase.sub[this.activeSubIndex] === 'Shield';
+            const bothAreShield = hasShieldMain && hasShieldSub;
+
+            let mainShield = false;
+            let subShield = false;
+
+            if (bothAreShield) {
+                const eitherPressed = isLeftMouseDown || isRightMouseDown;
+                mainShield = !this.isChameleonActive && eitherPressed;
+                subShield = !this.isChameleonActive && eitherPressed;
+            } else {
+                mainShield = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown);
+                subShield = !this.isChameleonActive && (hasShieldSub && isRightMouseDown);
+            }
+
+            if (!mainShield && !subShield) return false;
+
+            const attacker = allAgents.find(a => a.id === attackerId);
+            if (!attacker) return false;
+
+            const attackAngle = Math.atan2(attacker.y - this.y, attacker.x - this.x);
+            let angleDiff = attackAngle - this.angle;
+            angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+
+            const currentShieldAngle = (mainShield && subShield) ? 360 : 90;
+            const shieldRad = (currentShieldAngle * Math.PI) / 360;
+            return Math.abs(angleDiff) <= shieldRad;
+        }
+    };
+
+    // Spatially separated random walkable spawning
+    const usedSpawnPoints = [];
+    const totalAgentsCount = squadSize * 3;
+    const mapArea = arena.width * arena.height;
+    let targetMinDist = 420;
+    const areaPerAgent = mapArea / totalAgentsCount;
+    if (areaPerAgent < 160000) {
+        targetMinDist = Math.max(120, Math.sqrt(areaPerAgent) * 0.72);
+    }
+
+    const getSquadDynamicSpawnPoint = (existingPoints, minDist) => {
+        for (let attempt = 0; attempt < 350; attempt++) {
+            const rx = Math.random() * (arena.width - 180) + 90;
+            const ry = Math.random() * (arena.height - 180) + 90;
+
+            if (arena.isWall(rx, ry)) continue;
+
+            let tooClose = false;
+            for (const pt of existingPoints) {
+                const dx = pt.x - rx;
+                const dy = pt.y - ry;
+                if (dx * dx + dy * dy < minDist * minDist) {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (!tooClose) return { x: rx, y: ry };
+        }
+        if (minDist > 60) return getSquadDynamicSpawnPoint(existingPoints, minDist - 35);
+        for (let attempt = 0; attempt < 250; attempt++) {
+            const rx = Math.random() * (arena.width - 120) + 60;
+            const ry = Math.random() * (arena.height - 120) + 60;
+            if (!arena.isWall(rx, ry)) return { x: rx, y: ry };
+        }
+        return { x: 100 + Math.random() * 200, y: 100 + Math.random() * 200 };
+    };
+
+    const playerPt = getSquadDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+    usedSpawnPoints.push(playerPt);
+    player.x = playerPt.x;
+    player.y = playerPt.y;
+    player.trion = player.trionMax;
+    player.bodyHp = player.bodyHpMax;
+    player.isLeaking = false;
+    player.leakRate = 0;
+    player.activeMainIndex = 0;
+    player.activeSubIndex = 0;
+    player.isBagwormActive = (player.briefcase.main[0] === 'Bagworm' || player.briefcase.sub[0] === 'Bagworm');
+
+    allAgents.push(player);
+
+    for (let slot = 2; slot <= squadSize; slot++) {
+        const selectId = `team-1-member-${slot}`;
+        const presetVal = document.getElementById(selectId).value;
+        const presetData = agentPresets[presetVal] || agentPresets.osamu;
+        const name = presetData.name;
+
+        const ai = new window.AIAgent(`team_1_member_${slot}`, name, presetVal, gameDifficulty, 1, '#00f0ff');
+        const pos = getSquadDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+        usedSpawnPoints.push(pos);
+        ai.x = pos.x;
+        ai.y = pos.y;
+        ai.isCaptain = false;
+        allAgents.push(ai);
+    }
+
+    for (let slot = 1; slot <= squadSize; slot++) {
+        const selectId = `team-2-member-${slot}`;
+        const presetVal = document.getElementById(selectId).value;
+        const presetData = agentPresets[presetVal] || agentPresets.ninomiya;
+        const name = presetData.name + (slot === 1 ? ' (Capt)' : '');
+
+        const ai = new window.AIAgent(`team_2_member_${slot}`, name, presetVal, gameDifficulty, 2, '#ff5722');
+        const pos = getSquadDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+        usedSpawnPoints.push(pos);
+        ai.x = pos.x;
+        ai.y = pos.y;
+        ai.isCaptain = (slot === 1);
+        allAgents.push(ai);
+    }
+
+    for (let slot = 1; slot <= squadSize; slot++) {
+        const selectId = `team-3-member-${slot}`;
+        const presetVal = document.getElementById(selectId).value;
+        const presetData = agentPresets[presetVal] || agentPresets.kageura;
+        const name = presetData.name + (slot === 1 ? ' (Capt)' : '');
+
+        const ai = new window.AIAgent(`team_3_member_${slot}`, name, presetVal, gameDifficulty, 3, '#bd00ff');
+        const pos = getSquadDynamicSpawnPoint(usedSpawnPoints, targetMinDist);
+        usedSpawnPoints.push(pos);
+        ai.x = pos.x;
+        ai.y = pos.y;
+        ai.isCaptain = (slot === 1);
+        allAgents.push(ai);
+    }
+
+    allAgents.forEach(a => scoreBoard[a.id] = 0);
+
+    updateHUDSlotLabels();
+
+    gameTime = 300 * 60;
+
+    document.getElementById('game-logs').innerHTML = '';
+    addLog("[SYSTEM] Tactical Deployment Phase - Assessing squad positions...", 'system');
+
+    // Launch pre-match countdown
+    startCountdown(() => {
+        matchActive = true;
+        addLog("[TACTICAL] Squad Rank Wars Match Commenced! 3 squads deployed to field.", 'system');
+        requestAnimationFrame(gameLoop);
+    });
+}
+
+function applySquadPreset(teamNum, presetType) {
+    if (!presetType) return;
+    const mapping = {
+        tamakoma: ['yuma', 'osamu', 'chika', 'hyuse'],
+        ninomiya: ['ninomiya', 'kakizaki', 'yuba', 'suwa'],
+        kageura: ['kageura', 'murakami', 'katori', 'nasu'],
+        arafune: ['arafune', 'azuma', 'ikoma', 'suwa']
+    };
+    const agents = mapping[presetType];
+    if (!agents) return;
+
+    if (teamNum === 1) {
+        const s2 = document.getElementById('team-1-member-2');
+        const s3 = document.getElementById('team-1-member-3');
+        const s4 = document.getElementById('team-1-member-4');
+        if (s2) s2.value = agents[1];
+        if (s3) s3.value = agents[2];
+        if (s4) s4.value = agents[3];
+    } else {
+        const s1 = document.getElementById(`team-${teamNum}-member-1`);
+        const s2 = document.getElementById(`team-${teamNum}-member-2`);
+        const s3 = document.getElementById(`team-${teamNum}-member-3`);
+        const s4 = document.getElementById(`team-${teamNum}-member-4`);
+        if (s1) s1.value = agents[0];
+        if (s2) s2.value = agents[1];
+        if (s3) s3.value = agents[2];
+        if (s4) s4.value = agents[3];
+    }
+}
+
+function setupSquadModeUI() {
+    const members = [
+        'team-1-member-2', 'team-1-member-3', 'team-1-member-4',
+        'team-2-member-1', 'team-2-member-2', 'team-2-member-3', 'team-2-member-4',
+        'team-3-member-1', 'team-3-member-2', 'team-3-member-3', 'team-3-member-4'
+    ];
+
+    const optionsHTML = Object.keys(agentPresets)
+        .filter(key => key !== 'custom')
+        .map(key => `<option value="${key}">${agentPresets[key].name}</option>`)
+        .join('');
+
+    members.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.innerHTML = optionsHTML;
+        }
+    });
+
+    document.querySelectorAll('.preset-select').forEach(select => {
+        select.addEventListener('change', (e) => {
+            const team = parseInt(select.getAttribute('data-team'), 10);
+            applySquadPreset(team, select.value);
+        });
+    });
+
+    const sizeSelect = document.getElementById('squad-size-select');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', () => {
+            const val = sizeSelect.value;
+            const slot4s = document.querySelectorAll('.squad-member-row.slot-4');
+            slot4s.forEach(el => {
+                el.style.display = val === '4' ? 'flex' : 'none';
+            });
+        });
+    }
+
+    const randBtn = document.getElementById('squad-randomize-btn');
+    if (randBtn) {
+        randBtn.addEventListener('click', () => {
+            const presets = ['tamakoma', 'ninomiya', 'kageura', 'arafune'];
+            const p2 = presets[Math.floor(Math.random() * presets.length)];
+            const p3 = presets[Math.floor(Math.random() * presets.length)];
+
+            const sel2 = document.getElementById('squad-preset-2');
+            const sel3 = document.getElementById('squad-preset-3');
+            if (sel2) {
+                sel2.value = p2;
+                applySquadPreset(2, p2);
+            }
+            if (sel3) {
+                sel3.value = p3;
+                applySquadPreset(3, p3);
+            }
+            addLog(`[TACTICAL] Randomized Rival Squads! Loaded Preset: Team 2 (${p2.toUpperCase()}), Team 3 (${p3.toUpperCase()})`, 'system');
+        });
+    }
+
+    const startBtn = document.getElementById('start-squad-battle-btn');
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            startSimulation();
+        });
+    }
+
+    applySquadPreset(1, 'tamakoma');
+    applySquadPreset(2, 'ninomiya');
+    applySquadPreset(3, 'kageura');
+
+    window.initializeSquadUI = function () {
+        const label = document.getElementById('team-1-member-1-label');
+        if (label) {
+            const pData = agentPresets[selectedAgent] || agentPresets.yuma;
+            label.textContent = pData.name;
+        }
+        const sizeVal = sizeSelect ? sizeSelect.value : '3';
+        const slot4s = document.querySelectorAll('.squad-member-row.slot-4');
+        slot4s.forEach(el => {
+            el.style.display = sizeVal === '4' ? 'flex' : 'none';
+        });
+    };
+}

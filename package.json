@@ -4,8 +4,12 @@
   "description": "Tactical 2D Top-Down World Trigger Rank Wars Combat Simulator",
   "main": "index.html",
   "scripts": {
-    "dev": "npx -y serve .",
-    "start": "npx -y serve ."
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
   },
   "keywords": [
     "world-trigger",

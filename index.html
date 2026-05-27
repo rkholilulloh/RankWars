@@ -39,8 +39,13 @@
                     </div>
                 </div>
             </div>
-        </header>
-
+        </header> <!-- LOBBY MODE SWITCHER -->
+        <div class="lobby-modes-tabs card-blur">
+            <button id="mode-solo-btn" class="mode-tab-btn active">⟡ SOLO</button>
+            <button id="mode-squad-btn" class="mode-tab-btn">⟡ SQUAD</button>
+            <button id="mode-lan-btn" class="mode-tab-btn" style="display: none;">⟡ LAN MULTIPLAYER HQ</button>
+            <button id="how-to-play-btn" class="mode-tab-btn how-to-play-tab">📖 HOW TO PLAY</button>
+        </div>
 
         <main class="lobby-layout">
             <!-- AGENT SELECTOR -->
@@ -49,18 +54,18 @@
                     <h2><span class="icon">👤</span> SELECT AGENT</h2>
                 </div>
                 <div class="agent-grid">
-                    <button class="agent-card active" data-agent="yuma">
-                        <div class="agent-avatar yuma"></div>
-                        <div class="agent-info">
-                            <span class="agent-name">Yuma Kuga</span>
-                            <span class="agent-class">Attacker / Black Trigger User</span>
-                        </div>
-                    </button>
-                    <button class="agent-card" data-agent="osamu">
+                    <button class="agent-card active" data-agent="osamu">
                         <div class="agent-avatar osamu"></div>
                         <div class="agent-info">
                             <span class="agent-name">Osamu Mikumo</span>
                             <span class="agent-class">Shooter / Tamakoma Captain</span>
+                        </div>
+                    </button>
+                    <button class="agent-card" data-agent="yuma">
+                        <div class="agent-avatar yuma"></div>
+                        <div class="agent-info">
+                            <span class="agent-name">Yuma Kuga</span>
+                            <span class="agent-class">Attacker / Black Trigger User</span>
                         </div>
                     </button>
                     <button class="agent-card" data-agent="chika">
@@ -168,42 +173,41 @@
                     <h3>AGENT CAPABILITY COEFFICIENT</h3>
                     <div class="agent-stats-main">
                         <div class="agent-portrait-wrapper">
-                            <div id="agent-stats-portrait" class="agent-portrait yuma animate-glow"></div>
+                            <div id="agent-stats-portrait" class="agent-portrait osamu animate-glow"></div>
                         </div>
                         <div class="agent-stats-bars">
                             <div class="stat-row">
                                 <span class="stat-label">TRION LEVEL</span>
                                 <div class="stat-bar-bg">
-                                    <div id="stat-trion" class="stat-bar-fill" style="width: 80%"></div>
+                                    <div id="stat-trion" class="stat-bar-fill" style="width: 40%"></div>
                                 </div>
-                                <span id="stat-trion-val" class="stat-value">8</span>
+                                <span id="stat-trion-val" class="stat-value">4</span>
                             </div>
                             <div class="stat-row">
                                 <span class="stat-label">ATTACK power</span>
                                 <div class="stat-bar-bg">
-                                    <div id="stat-attack" class="stat-bar-fill" style="width: 90%"></div>
+                                    <div id="stat-attack" class="stat-bar-fill" style="width: 40%"></div>
                                 </div>
-                                <span id="stat-attack-val" class="stat-value">9</span>
+                                <span id="stat-attack-val" class="stat-value">4</span>
                             </div>
                             <div class="stat-row">
                                 <span class="stat-label">DEFENSE/SUPPORT</span>
                                 <div class="stat-bar-bg">
-                                    <div id="stat-defense" class="stat-bar-fill" style="width: 70%"></div>
+                                    <div id="stat-defense" class="stat-bar-fill" style="width: 80%"></div>
                                 </div>
-                                <span id="stat-defense-val" class="stat-value">7</span>
+                                <span id="stat-defense-val" class="stat-value">8</span>
                             </div>
                             <div class="stat-row">
                                 <span class="stat-label">MOBILITY</span>
                                 <div class="stat-bar-bg">
-                                    <div id="stat-mobility" class="stat-bar-fill" style="width: 90%"></div>
+                                    <div id="stat-mobility" class="stat-bar-fill" style="width: 50%"></div>
                                 </div>
-                                <span id="stat-mobility-val" class="stat-value">9</span>
+                                <span id="stat-mobility-val" class="stat-value">5</span>
                             </div>
                         </div>
                     </div>
                     <p id="agent-description" class="agent-bio">
-                        Neighbor with exceptional combat reflexes. Equips Scorpion for versatile close-range combat,
-                        complemented by Grasshopper maneuvers.
+                        Tamakoma Captain. Focuses on tactical spider webs and homing Hound traps to corner opponents.
                     </p>
                 </div>
             </section>
@@ -223,15 +227,15 @@
                             <div class="slot-item" data-slot="main1" data-key="1">
                                 <span class="key-badge">1</span>
                                 <div class="slot-content">
-                                    <span class="trigger-name">Scorpion</span>
+                                    <span class="trigger-name">Raygust</span>
                                     <span class="trigger-type">Attacker</span>
                                 </div>
                             </div>
                             <div class="slot-item" data-slot="main2" data-key="2">
                                 <span class="key-badge">2</span>
                                 <div class="slot-content">
-                                    <span class="trigger-name">Grasshopper</span>
-                                    <span class="trigger-type">Support</span>
+                                    <span class="trigger-name">Asteroid</span>
+                                    <span class="trigger-type">Shooter</span>
                                 </div>
                             </div>
                             <div class="slot-item" data-slot="main3" data-key="3">
@@ -258,29 +262,29 @@
                             <div class="slot-item" data-slot="sub1" data-key="Q">
                                 <span class="key-badge">Q</span>
                                 <div class="slot-content">
-                                    <span class="trigger-name">Scorpion</span>
-                                    <span class="trigger-type">Attacker</span>
+                                    <span class="trigger-name">Thruster</span>
+                                    <span class="trigger-type">Support</span>
                                 </div>
                             </div>
                             <div class="slot-item" data-slot="sub2" data-key="E">
                                 <span class="key-badge">E</span>
                                 <div class="slot-content">
-                                    <span class="trigger-name">Shield</span>
-                                    <span class="trigger-type">Defense</span>
+                                    <span class="trigger-name">Spider</span>
+                                    <span class="trigger-type">Option</span>
                                 </div>
                             </div>
                             <div class="slot-item" data-slot="sub3" data-key="R">
                                 <span class="key-badge">R</span>
                                 <div class="slot-content">
-                                    <span class="trigger-name">Empty</span>
-                                    <span class="trigger-type">None</span>
+                                    <span class="trigger-name">Shield</span>
+                                    <span class="trigger-type">Defense</span>
                                 </div>
                             </div>
                             <div class="slot-item" data-slot="sub4" data-key="F">
                                 <span class="key-badge">F</span>
                                 <div class="slot-content">
-                                    <span class="trigger-name">Empty</span>
-                                    <span class="trigger-type">None</span>
+                                    <span class="trigger-name">Bagworm</span>
+                                    <span class="trigger-type">Option</span>
                                 </div>
                             </div>
                         </div>
@@ -288,140 +292,404 @@
                 </div>
 
                 <!-- BATTLE PARAMETERS -->
-                <div class="battle-parameters card-blur">
-                    <h3>BATTLE SETTINGS</h3>
-                    <div class="params-row">
-                        <div class="param-group">
-                            <label for="map-select">Arena Map</label>
-                            <select id="map-select" class="cyber-input">
-                                <!-- Small Arena Maps (~1000px) -->
-                                <option value="cityscape_small">Cityscape - Small (1200x1000)</option>
-                                <option value="cybergrid_small">Cyber Grid Plain - Small (1200x1000)</option>
-                                <option value="forest_small">Forest & Mountain - Small (1200x1000)</option>
-                                <option value="training_small" selected>Border Training Room - Small (1200x1000)
-                                </option>
-
-                                <!-- Medium Arena Maps (~2000px) -->
-                                <option value="cityscape_medium">Cityscape - Medium (2000x1800)</option>
-                                <option value="cybergrid_medium">Cyber Grid Plain - Medium (2000x1800)</option>
-                                <option value="forest_medium">Forest & Mountain - Medium (2000x1800)</option>
-                                <option value="training_medium">Border Training Room - Medium (2000x1800)</option>
-
-                                <!-- Large Arena Maps (~3000px) -->
-                                <option value="cityscape_large">Cityscape Large - Large (3800x3200)</option>
-                                <option value="cybergrid_large">Cyber Grid Plain - Large (3200x2900)</option>
-                                <option value="forest_large">Forest & Mountain - Large (3500x3000)</option>
-                                <option value="training_large">Border Training Room - Large (3600x3200)</option>
-                            </select>
-                        </div>
-                        <div class="param-group">
-                            <label for="difficulty-select">Simulation Difficulty</label>
-                            <select id="difficulty-select" class="cyber-input">
-                                <option value="easy">Easy (Slower, Lower Damage)</option>
-                                <option value="medium" selected>Medium (Standard Mode)</option>
-                                <option value="hard">Hard (Ultra Fast, Lethal)</option>
-                            </select>
-                        </div>
-                        <div class="param-group">
-                            <label for="trion-boost-select">Trion Capacity Boost</label>
-                            <select id="trion-boost-select" class="cyber-input">
-                                <option value="10">100% (Standard Trion)</option>
-                                <option value="20" selected>200% (Double Trion)</option>
-                                <option value="30">300% (Triple Trion)</option>
-                                <option value="50">500% (Trion Monster Mode)</option>
-                            </select>
-                        </div>
-                        <div class="param-group">
-                            <label for="hp-boost-select">Trion Body HP Boost</label>
-                            <select id="hp-boost-select" class="cyber-input">
-                                <option value="0.5">50% (Glass Cannon Mode)</option>
-                                <option value="1" selected>100% (Standard HP)</option>
-                                <option value="2">200% (Double HP - Long Battle)</option>
-                                <option value="3">300% (Triple HP - Marathon)</option>
-                                <option value="5">500% (Titanium Body Mode)</option>
-                            </select>
-                        </div>
-                        <div class="param-group">
-                            <label for="extra-rivals-select">Extra B-Rank Agents</label>
-                            <select id="extra-rivals-select" class="cyber-input">
-                                <option value="0" selected>None (Rivals Only)</option>
-                                <option value="2">2 Extra Agents</option>
-                                <option value="4">4 Extra Agents</option>
-                                <option value="6">6 Extra Agents</option>
-                                <option value="8">8 Extra Agents</option>
-                            </select>
-                        </div>
-                        <div class="param-group select-rivals-group">
-                            <label>Deploy Rivals</label>
-                            <div class="rival-checkboxes-container">
-                                <label class="rival-checkbox active">
-                                    <input type="checkbox" id="rival-yuma" value="yuma" checked>
-                                    <span>Yuma</span>
-                                </label>
-                                <label class="rival-checkbox active">
-                                    <input type="checkbox" id="rival-osamu" value="osamu" checked>
-                                    <span>Osamu</span>
-                                </label>
-                                <label class="rival-checkbox active">
-                                    <input type="checkbox" id="rival-chika" value="chika" checked>
-                                    <span>Chika</span>
-                                </label>
-                                <label class="rival-checkbox active">
-                                    <input type="checkbox" id="rival-hyuse" value="hyuse" checked>
-                                    <span>Hyuse</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-arafune" value="arafune">
-                                    <span>Arafune</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-kakizaki" value="kakizaki">
-                                    <span>Kakizaki</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-murakami" value="murakami">
-                                    <span>Murakami</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-azuma" value="azuma">
-                                    <span>Azuma</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-ikoma" value="ikoma">
-                                    <span>Ikoma</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-katori" value="katori">
-                                    <span>Katori</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-nasu" value="nasu">
-                                    <span>Nasu</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-suwa" value="suwa">
-                                    <span>Suwa</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-kageura" value="kageura">
-                                    <span>Kageura</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-ninomiya" value="ninomiya">
-                                    <span>Ninomiya</span>
-                                </label>
-                                <label class="rival-checkbox">
-                                    <input type="checkbox" id="rival-yuba" value="yuba">
-                                    <span>Yuba</span>
-                                </label>
+                <div class="battle-parameters card-blurx">
+                    <!-- BATTLE PARAMETERS -->
+                    <div id="solo-parameters">
+                        <div class="battle-parametersx card-blurx">
+                            <h3>BATTLE SETTINGS</h3>
+                            <div class="params-row">
+                                <div class="param-group">
+                                    <label for="map-select">Arena Map</label>
+                                    <select id="map-select" class="cyber-input">
+                                        <!-- Small Arena Maps (~1000px) -->
+                                        <option value="cityscape_small">Cityscape - Small (1200x1000)</option>
+                                        <option value="cybergrid_small">Cyber Grid Plain - Small (1200x1000)</option>
+                                        <option value="forest_small">Forest & Mountain - Small (1200x1000)</option>
+                                        <option value="training_small" selected>Border Training Room - Small (1200x1000)
+                                        </option>
+                                        <!-- Medium Arena Maps (~2000px) -->
+                                        <option value="cityscape_medium">Cityscape - Medium (2000x1800)</option>
+                                        <option value="cybergrid_medium">Cyber Grid Plain - Medium (2000x1800)</option>
+                                        <option value="forest_medium">Forest & Mountain - Medium (2000x1800)</option>
+                                        <option value="training_medium">Border Training Room - Medium (2000x1800)
+                                        </option>
+                                        <!-- Large Arena Maps (~3000px) -->
+                                        <option value="cityscape_large">Cityscape Large - Large (3800x3200)</option>
+                                        <option value="cybergrid_large">Cyber Grid Plain - Large (3200x2900)</option>
+                                        <option value="forest_large">Forest & Mountain - Large (3500x3000)</option>
+                                        <option value="training_large">Border Training Room - Large (3600x3200)</option>
+                                    </select>
+                                </div>
+                                <div class="param-group">
+                                    <label for="difficulty-select">Enemy Difficulty</label>
+                                    <select id="difficulty-select" class="cyber-input">
+                                        <option value="easy">Easy (Slower, Lower Damage)</option>
+                                        <option value="medium" selected>Medium (Standard Mode)</option>
+                                        <option value="hard">Hard (Ultra Fast, Lethal)</option>
+                                    </select>
+                                </div>
+                                <div class="param-group">
+                                    <label for="extra-rivals-select">Extra B-Rank Agents</label>
+                                    <select id="extra-rivals-select" class="cyber-input">
+                                        <option value="0" selected>None (Rivals Only)</option>
+                                        <option value="2">2 Extra Agents</option>
+                                        <option value="4">4 Extra Agents</option>
+                                        <option value="6">6 Extra Agents</option>
+                                        <option value="8">8 Extra Agents</option>
+                                    </select>
+                                </div>
+                                <div class="param-group">
+                                    <label for="trion-boost-select">Trion Boost</label>
+                                    <select id="trion-boost-select" class="cyber-input">
+                                        <option value="10">100% (Standard Trion)</option>
+                                        <option value="20" selected>200% (Double Trion)</option>
+                                        <option value="30">300% (Triple Trion)</option>
+                                        <option value="50">500% (Trion Monster Mode)</option>
+                                    </select>
+                                </div>
+                                <div class="param-group">
+                                    <label for="hp-boost-select">HP Boost</label>
+                                    <select id="hp-boost-select" class="cyber-input">
+                                        <option value="0.5">50% (Glass Cannon Mode)</option>
+                                        <option value="1" selected>100% (Standard HP)</option>
+                                        <option value="2">200% (Double HP - Long Battle)</option>
+                                        <option value="3">300% (Triple HP - Marathon)</option>
+                                        <option value="5">500% (Titanium Body Mode)</option>
+                                    </select>
+                                </div>
+                                <div class="param-group select-rivals-group">
+                                    <label>Deploy Rivals</label>
+                                    <div class="rival-checkboxes-container">
+                                        <label class="rival-checkbox active">
+                                            <input type="checkbox" id="rival-yuma" value="yuma" checked>
+                                            <span>Yuma</span>
+                                        </label>
+                                        <label class="rival-checkbox active">
+                                            <input type="checkbox" id="rival-osamu" value="osamu" checked>
+                                            <span>Osamu</span>
+                                        </label>
+                                        <label class="rival-checkbox active">
+                                            <input type="checkbox" id="rival-chika" value="chika" checked>
+                                            <span>Chika</span>
+                                        </label>
+                                        <label class="rival-checkbox active">
+                                            <input type="checkbox" id="rival-hyuse" value="hyuse" checked>
+                                            <span>Hyuse</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-arafune" value="arafune">
+                                            <span>Arafune</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-kakizaki" value="kakizaki">
+                                            <span>Kakizaki</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-murakami" value="murakami">
+                                            <span>Murakami</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-azuma" value="azuma">
+                                            <span>Azuma</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-ikoma" value="ikoma">
+                                            <span>Ikoma</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-katori" value="katori">
+                                            <span>Katori</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-nasu" value="nasu">
+                                            <span>Nasu</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-suwa" value="suwa">
+                                            <span>Suwa</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-kageura" value="kageura">
+                                            <span>Kageura</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-ninomiya" value="ninomiya">
+                                            <span>Ninomiya</span>
+                                        </label>
+                                        <label class="rival-checkbox">
+                                            <input type="checkbox" id="rival-yuba" value="yuba">
+                                            <span>Yuba</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        <div class="action-bar">
+                            <button id="start-battle-btn" class="btn btn-primary btn-lg animate-pulse">DEPLOY TO
+                                FIELD</button>
+                        </div>
                     </div>
-                </div>
 
-                <div class="action-bar">
-                    <button id="start-battle-btn" class="btn btn-primary btn-lg animate-pulse">DEPLOY TO FIELD</button>
-                </div>
+                    <!-- SQUAD RANK WARS PARAMETERS -->
+                    <div id="squad-parameters" class="squad-parameters card-blur" style="display: none;">
+                        <h3>TACTICAL SQUAD RANK WARS SETTINGS</h3>
+
+                        <div class="squad-settings-header params-row">
+                            <div class="param-group">
+                                <label for="squad-map-select">Arena Map</label>
+                                <select id="squad-map-select" class="cyber-input">
+                                    <option value="cityscape_small">Cityscape - Small (1200x1000)</option>
+                                    <option value="cybergrid_small">Cyber Grid Plain - Small (1200x1000)</option>
+                                    <option value="forest_small">Forest & Mountain - Small (1200x1000)</option>
+                                    <option value="training_small" selected>Border Training Room - Small (1200x1000)
+                                    </option>
+                                    <option value="cityscape_medium">Cityscape - Medium (2000x1800)</option>
+                                    <option value="cybergrid_medium">Cyber Grid Plain - Medium (2000x1800)</option>
+                                    <option value="forest_medium">Forest & Mountain - Medium (2000x1800)</option>
+                                    <option value="training_medium">Border Training Room - Medium (2000x1800)</option>
+                                    <option value="cityscape_large">Cityscape Large - Large (3800x3200)</option>
+                                    <option value="cybergrid_large">Cyber Grid Plain - Large (3200x2900)</option>
+                                    <option value="forest_large">Forest & Mountain - Large (3500x3000)</option>
+                                    <option value="training_large">Border Training Room - Large (3600x3200)</option>
+                                </select>
+                            </div>
+                            <div class="param-group">
+                                <label for="squad-difficulty-select">Enemy Difficulty</label>
+                                <select id="squad-difficulty-select" class="cyber-input">
+                                    <option value="easy">Easy (Slower, Lower Damage)</option>
+                                    <option value="medium" selected>Medium (Standard Mode)</option>
+                                    <option value="hard">Hard (Ultra Fast, Lethal)</option>
+                                </select>
+                            </div>
+                            <div class="param-group">
+                                <label for="squad-size-select">Squad Size</label>
+                                <select id="squad-size-select" class="cyber-input">
+                                    <option value="3" selected>3 Members Per Squad</option>
+                                    <option value="4">4 Members Per Squad</option>
+                                </select>
+                            </div>
+                            <div class="param-group">
+                                <label for="squad-trion-boost-select">Trion Boost</label>
+                                <select id="squad-trion-boost-select" class="cyber-input">
+                                    <option value="10">100% (Standard Trion)</option>
+                                    <option value="20" selected>200% (Double Trion)</option>
+                                    <option value="30">300% (Triple Trion)</option>
+                                    <option value="50">500% (Trion Monster Mode)</option>
+                                </select>
+                            </div>
+                            <div class="param-group">
+                                <label for="squad-hp-boost-select">HP Boost</label>
+                                <select id="squad-hp-boost-select" class="cyber-input">
+                                    <option value="0.5">50% (Glass Cannon Mode)</option>
+                                    <option value="1" selected>100% (Standard HP)</option>
+                                    <option value="2">200% (Double HP - Long Match)</option>
+                                    <option value="3">300% (Triple HP - Marathon)</option>
+                                    <option value="5">500% (Titanium Body Mode)</option>
+                                </select>
+                            </div>
+                        </div>
+
+
+                        <!-- SQUAD CONFIGURATION ROWS (3 SQUADS) -->
+                        <div class="squads-config-grid">
+                            <!-- TEAM 1 (YOUR SQUAD) -->
+                            <div class="squad-config-card team-cyan">
+                                <div class="squad-card-header">
+                                    <h4 class="neon-cyan-text">TEAM 1: YOUR SQUAD</h4>
+                                    <select class="preset-select" id="squad-preset-1" data-team="1">
+                                        <option value="">-- Choose Preset --</option>
+                                        <option value="tamakoma" selected>Tamakoma-2</option>
+                                        <option value="ninomiya">Ninomiya Unit</option>
+                                        <option value="kageura">Kageura Unit</option>
+                                        <option value="arafune">Arafune Unit</option>
+                                    </select>
+                                </div>
+                                <div class="squad-members-list">
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Captain (You):</span>
+                                        <span class="player-agent-label" id="team-1-member-1-label">Yuma Kuga</span>
+                                    </div>
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Teammate 2:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-1-member-2">
+                                            <!-- Dynamically populated or default to Osamu -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Teammate 3:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-1-member-3">
+                                            <!-- Dynamically populated or default to Chika -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row slot-4" style="display: none;">
+                                        <span class="role-label">Teammate 4:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-1-member-4">
+                                            <!-- Dynamically populated or default to Hyuse -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TEAM 2 (RIVAL SQUAD A) -->
+                            <div class="squad-config-card team-orange">
+                                <div class="squad-card-header">
+                                    <h4 class="neon-orange-text">TEAM 2: RIVAL SQUAD A</h4>
+                                    <select class="preset-select" id="squad-preset-2" data-team="2">
+                                        <option value="">-- Choose Preset --</option>
+                                        <option value="tamakoma">Tamakoma-2</option>
+                                        <option value="ninomiya" selected>Ninomiya Unit</option>
+                                        <option value="kageura">Kageura Unit</option>
+                                        <option value="arafune">Arafune Unit</option>
+                                    </select>
+                                </div>
+                                <div class="squad-members-list">
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Captain:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-2-member-1">
+                                            <!-- Default Ninomiya -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Rival 2:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-2-member-2">
+                                            <!-- Default Kakizaki -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Rival 3:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-2-member-3">
+                                            <!-- Default Yuba -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row slot-4" style="display: none;">
+                                        <span class="role-label">Rival 4:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-2-member-4">
+                                            <!-- Default Custom -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TEAM 3 (RIVAL SQUAD B) -->
+                            <div class="squad-config-card team-purple">
+                                <div class="squad-card-header">
+                                    <h4 class="neon-purple-text">TEAM 3: RIVAL SQUAD B</h4>
+                                    <select class="preset-select" id="squad-preset-3" data-team="3">
+                                        <option value="">-- Choose Preset --</option>
+                                        <option value="tamakoma">Tamakoma-2</option>
+                                        <option value="ninomiya">Ninomiya Unit</option>
+                                        <option value="kageura" selected>Kageura Unit</option>
+                                        <option value="arafune">Arafune Unit</option>
+                                    </select>
+                                </div>
+                                <div class="squad-members-list">
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Captain:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-3-member-1">
+                                            <!-- Default Kageura -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Rival 2:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-3-member-2">
+                                            <!-- Default Murakami -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row">
+                                        <span class="role-label">Rival 3:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-3-member-3">
+                                            <!-- Default Katori -->
+                                        </select>
+                                    </div>
+                                    <div class="squad-member-row slot-4" style="display: none;">
+                                        <span class="role-label">Rival 4:</span>
+                                        <select class="agent-select cyber-input-sm" id="team-3-member-4">
+                                            <!-- Default Nasu -->
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="action-bar flex-between" style="margin-top: 20px;">
+                            <button id="squad-randomize-btn" class="btn btn-secondary btn-md">RANDOMIZE RIVALS</button>
+                            <button id="start-squad-battle-btn" class="btn btn-primary btn-lg animate-pulse">DEPLOY
+                                SQUAD</button>
+                        </div>
+                    </div>
+
+                    <!-- LAN MULTIPLAYER HQ -->
+                    <div id="lan-parameters" class="lan-parameters card-blur" style="display: none;">
+                        <h3>LAN MULTIPLAYER COMM HQ</h3>
+
+                        <div class="lan-setup-modes">
+                            <div class="lan-card host-card">
+                                <h4>Host a Tactical Match</h4>
+                                <p class="lan-desc">Host a match on your local network. Your friends can connect using
+                                    your IP address.</p>
+                                <button id="lan-host-btn" class="btn btn-primary btn-md">HOST RANK MATCH</button>
+                            </div>
+
+                            <div class="lan-divider"><span>OR</span></div>
+
+                            <div class="lan-card join-card">
+                                <h4>Join Friend's Match</h4>
+                                <p class="lan-desc">Enter the Host's local IP address or XAMPP URL to join their
+                                    tactical room.</p>
+                                <div class="lan-input-group">
+                                    <input type="text" id="lan-ip-input" placeholder="e.g. 192.168.1.15"
+                                        class="cyber-input">
+                                    <button id="lan-join-btn" class="btn btn-secondary btn-md">CONNECT TO FIELD</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Lobby Room View (Hidden by default, shown once hosted/joined) -->
+                        <div id="lan-lobby-room" class="lan-lobby-room" style="display: none;">
+                            <div class="lan-lobby-header">
+                                <div class="room-indicator">ROOM ID: <span id="lan-room-id"
+                                        class="neon-purple-text">ROOM-XXXX</span></div>
+                                <div class="ip-indicator">HOST LAN IP: <span id="lan-host-ip"
+                                        class="neon-cyan-text">192.168.x.x</span></div>
+                            </div>
+
+                            <div class="lan-players-section">
+                                <h5>TACTICAL COMBATANTS IN CHANNEL</h5>
+                                <div id="lan-players-list" class="lan-players-list">
+                                    <!-- Dynamically populated -->
+                                </div>
+                            </div>
+
+                            <!-- Battle map select and ready toggle -->
+                            <div class="lan-room-settings">
+                                <div class="param-group">
+                                    <label for="lan-map-select">Arena Map (Host Only)</label>
+                                    <select id="lan-map-select" class="cyber-input">
+                                        <option value="cityscape_small" selected>Cityscape - Small (1200x1000)</option>
+                                        <option value="cybergrid_small">Cyber Grid Plain - Small (1200x1000)</option>
+                                        <option value="forest_small">Forest & Mountain - Small (1200x1000)</option>
+                                        <option value="training_small">Border Training Room - Small (1200x1000)</option>
+                                        <option value="cityscape_medium">Cityscape - Medium (2000x1800)</option>
+                                        <option value="cybergrid_medium">Cyber Grid Plain - Medium (2000x1800)</option>
+                                        <option value="forest_medium">Forest & Mountain - Medium (2000x1800)</option>
+                                        <option value="training_medium">Border Training Room - Medium (2000x1800)
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div class="lan-room-actions">
+                                    <button id="lan-ready-btn" class="btn btn-secondary btn-md">TOGGLE READY</button>
+                                    <button id="lan-start-btn" class="btn btn-primary btn-md animate-pulse"
+                                        disabled>DEPLOY TO LAN FIELD</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="lan-status-log" class="lan-status-log card-blur">
+                            <span class="prefix">[LAN STATUS]</span> <span id="lan-status-text">Disconnected. Select
+                                Solo or LAN mode above to start.</span>
+                        </div>
+                    </div>
             </section>
         </main>
     </div>
@@ -651,7 +919,169 @@
             </div>
             <div class="modal-actions">
                 <button id="resume-btn" class="btn btn-primary">RESUME TRAINING</button>
+                <button id="pause-redeploy-btn" class="btn btn-secondary">REDEPLOY IN SIMULATION</button>
                 <button id="pause-quit-btn" class="btn btn-secondary">BAIL OUT (EXIT)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOW TO PLAY MODAL -->
+    <div id="how-to-play-modal" class="overlay-screen">
+        <div class="htp-modal card-blur animate-popup">
+            <div class="htp-header">
+                <h2>📖 HOW TO PLAY</h2>
+                <button id="htp-close-btn" class="htp-close-btn">&times;</button>
+            </div>
+
+            <!-- TABS -->
+            <div class="htp-tabs">
+                <button class="htp-tab-btn active" data-htp-tab="controls">🎮 CONTROLS</button>
+                <button class="htp-tab-btn" data-htp-tab="rules">📜 RULES</button>
+                <button class="htp-tab-btn" data-htp-tab="triggers">⚔️ TRIGGERS</button>
+            </div>
+
+            <!-- CONTROLS TAB -->
+            <div class="htp-tab-content active" id="htp-controls">
+                <div class="htp-controls-grid">
+                    <div class="htp-section">
+                        <h3>🏃 MOVEMENT & AIM</h3>
+                        <div class="htp-key-list">
+                            <div class="htp-key-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move Character (Up/Left/Down/Right)</span></div>
+                            <div class="htp-key-row"><kbd>Mouse Cursor</kbd><span>Aim Direction / Face Enemies</span></div>
+                            <div class="htp-key-row"><kbd>Scroll Wheel</kbd><span>Resize Shield (Focus ↔ 360° Shell)</span></div>
+                        </div>
+                    </div>
+                    <div class="htp-section">
+                        <h3>🗡️ MAIN HAND (Left Click)</h3>
+                        <div class="htp-key-list">
+                            <div class="htp-key-row"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><span>Select Main Trigger Slot</span></div>
+                            <div class="htp-key-row"><kbd>Left Click</kbd><span>Use Active Main Trigger</span></div>
+                        </div>
+                    </div>
+                    <div class="htp-section">
+                        <h3>🛡️ SUB HAND (Right Click)</h3>
+                        <div class="htp-key-list">
+                            <div class="htp-key-row"><kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd><span>Select Sub Trigger Slot</span></div>
+                            <div class="htp-key-row"><kbd>Right Click</kbd><span>Use Active Sub Trigger</span></div>
+                        </div>
+                    </div>
+                    <div class="htp-section">
+                        <h3>💥 ADVANCED COMBOS</h3>
+                        <div class="htp-key-list">
+                            <div class="htp-key-row"><kbd>Spacebar</kbd><span>Composite Bullet Fusion (Shooter triggers in both hands)</span></div>
+                            <div class="htp-key-row"><kbd>Hold Shift</kbd><span>Load Lead Bullet (if Lead Bullet is equipped)</span></div>
+                            <div class="htp-key-row"><kbd>Viper + Drag</kbd><span>Draw custom bullet path (click and drag to draw waypoints)</span></div>
+                            <div class="htp-key-row"><kbd>ESC</kbd><span>Pause Simulation / Options Menu</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RULES TAB -->
+            <div class="htp-tab-content" id="htp-rules">
+                <div class="htp-rules-grid">
+                    <div class="htp-section htp-rule-card">
+                        <h3>🎯 OBJECTIVE</h3>
+                        <p>Eliminate all rival agents before the 5-minute timer expires. Each rival you eliminate grants <strong>+1 Point</strong>. The agent with the most points when time runs out wins the match.</p>
+                    </div>
+                    <div class="htp-section htp-rule-card">
+                        <h3>⚡ TRION SYSTEM</h3>
+                        <p>Every trigger action consumes <strong>Trion</strong> (energy). Attacks, shields, and support triggers all cost Trion. When your Trion reaches 0, you enter <strong>BAIL OUT</strong> and are eliminated from the match.</p>
+                        <p class="htp-note">💡 Trion does NOT recharge! Fight wisely and conserve energy.</p>
+                    </div>
+                    <div class="htp-section htp-rule-card">
+                        <h3>❤️ HP & DAMAGE</h3>
+                        <p>Each agent has HP (Hit Points). When HP reaches 0, the agent is eliminated. Different triggers deal varying damage based on the attacker's <strong>Attack</strong> stat and the weapon's base power.</p>
+                    </div>
+                    <div class="htp-section htp-rule-card">
+                        <h3>💼 BRIEFCASE SETUP</h3>
+                        <p>Before battle, configure your <strong>Trigger Briefcase</strong> with 4 Main and 4 Sub trigger slots. Click any slot in the lobby to swap triggers. Each agent has a default loadout you can customize.</p>
+                    </div>
+                    <div class="htp-section htp-rule-card">
+                        <h3>🏆 MATCH MODES</h3>
+                        <p><strong>SOLO:</strong> Free-for-all battle against AI rivals. Select which agents to deploy and set difficulty.</p>
+                        <p><strong>SQUAD:</strong> Tactical 3v3v3 Team Rank Wars. Pick your teammates and face two rival squads. Points are tallied per team.</p>
+                    </div>
+                    <div class="htp-section htp-rule-card">
+                        <h3>🛑 BAIL OUT</h3>
+                        <p>When eliminated, you can still spectate the match using <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to scroll the camera. Wait for the match to end naturally or click <strong>REDEPLOY</strong> to start a new match.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRIGGERS TAB -->
+            <div class="htp-tab-content" id="htp-triggers">
+                <div class="htp-triggers-grid">
+                    <div class="htp-section htp-trigger-card cat-attacker">
+                        <h3>⚔️ ATTACKER (Melee)</h3>
+                        <div class="htp-trigger-list">
+                            <div class="htp-trigger-item"><strong>Kogetsu</strong> — Standard blade. High damage per hit, moderate reach.</div>
+                            <div class="htp-trigger-item"><strong>Scorpion</strong> — Morphing blade. Fast attacks, can extend range. Versatile.</div>
+                            <div class="htp-trigger-item"><strong>Raygust</strong> — Heavy shield-blade. Can switch between sword and defensive shield mode.</div>
+                            <div class="htp-trigger-item"><strong>Senku (Kogetsu)</strong> — Extended range slash. Sends a blade wave at medium range.</div>
+                            <div class="htp-trigger-item"><strong>Mole Claw</strong> — Underground surprise attack. Launches blade from beneath the ground.</div>
+                        </div>
+                    </div>
+                    <div class="htp-section htp-trigger-card cat-shooter">
+                        <h3>🔫 SHOOTER (Ranged)</h3>
+                        <div class="htp-trigger-list">
+                            <div class="htp-trigger-item"><strong>Asteroid</strong> — Straight-line bullet. High power, no homing.</div>
+                            <div class="htp-trigger-item"><strong>Hound</strong> — Homing bullet. Tracks enemies but deals less damage.</div>
+                            <div class="htp-trigger-item"><strong>Viper</strong> — Custom-path bullet. Draw a flight path for curved shots.</div>
+                            <div class="htp-trigger-item"><strong>Meteora</strong> — Explosive shell. Detonates on impact, area damage.</div>
+                        </div>
+                    </div>
+                    <div class="htp-section htp-trigger-card cat-gunner">
+                        <h3>🔫 GUNNER (Ranged Weapons)</h3>
+                        <div class="htp-trigger-list">
+                            <div class="htp-trigger-item"><strong>Assault Rifle</strong> — Rapid-fire automatic. High rate, moderate damage.</div>
+                            <div class="htp-trigger-item"><strong>Shotgun</strong> — Close-range spread. Devastating at close distance.</div>
+                            <div class="htp-trigger-item"><strong>Handgun</strong> — Balanced pistol. Good accuracy and fire rate.</div>
+                        </div>
+                    </div>
+                    <div class="htp-section htp-trigger-card cat-sniper">
+                        <h3>🎯 SNIPER (Long Range)</h3>
+                        <div class="htp-trigger-list">
+                            <div class="htp-trigger-item"><strong>Egret</strong> — Standard sniper. Good range and damage balance.</div>
+                            <div class="htp-trigger-item"><strong>Ibis</strong> — Heavy sniper. Extreme damage, can destroy walls.</div>
+                            <div class="htp-trigger-item"><strong>Lightning</strong> — Fastest sniper. Low damage, ultra-fast projectile.</div>
+                        </div>
+                    </div>
+                    <div class="htp-section htp-trigger-card cat-defense">
+                        <h3>🛡️ DEFENSE & SUPPORT</h3>
+                        <div class="htp-trigger-list">
+                            <div class="htp-trigger-item"><strong>Shield</strong> — Trion barrier. Blocks incoming projectiles. Scroll to resize.</div>
+                            <div class="htp-trigger-item"><strong>Bagworm</strong> — Stealth cloak. Hides you from enemy radar.</div>
+                            <div class="htp-trigger-item"><strong>Grasshopper</strong> — Launch pad. Creates a jump platform for aerial mobility.</div>
+                            <div class="htp-trigger-item"><strong>Spider</strong> — Tripwire net. Anchors between walls to trap/slow enemies.</div>
+                            <div class="htp-trigger-item"><strong>Thruster</strong> — Raygust booster. Dash forward at high speed.</div>
+                            <div class="htp-trigger-item"><strong>Lead Bullet</strong> — Heavy weight infusion. Slows hit enemies dramatically.</div>
+                        </div>
+                    </div>
+                    <div class="htp-section htp-trigger-card cat-composite">
+                        <h3>💫 COMPOSITE BULLETS (Spacebar Fusion)</h3>
+                        <div class="htp-trigger-list">
+                            <div class="htp-trigger-item"><strong>Gimlet</strong> (Asteroid + Asteroid) — Armor-piercing bullet. Breaks shields.</div>
+                            <div class="htp-trigger-item"><strong>Tomahawk</strong> (Hound + Meteora) — Homing missile. Tracks and explodes.</div>
+                            <div class="htp-trigger-item"><strong>Salamander</strong> (Hound + Viper) — Intelligent tracker. Complex curves with homing.</div>
+                            <div class="htp-trigger-item"><strong>Hornet</strong> (Asteroid + Hound) — Hybrid bullet. Semi-homing with high damage.</div>
+                        </div>
+                        <p class="htp-note">💡 Equip Shooter triggers in BOTH Main & Sub slots to fuse. 1.8s charge time, can't move during fusion!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PRE-MATCH COUNTDOWN OVERLAY -->
+    <div id="countdown-overlay" class="overlay-screen countdown-overlay">
+        <div class="countdown-content">
+            <div class="countdown-title">TACTICAL DEPLOYMENT</div>
+            <div class="countdown-subtitle">Assess enemy positions before engagement</div>
+            <div id="countdown-number" class="countdown-number">5</div>
+            <div class="countdown-label">MATCH STARTING IN</div>
+            <div class="countdown-bar-track">
+                <div id="countdown-bar-fill" class="countdown-bar-fill"></div>
             </div>
         </div>
     </div>
@@ -662,6 +1092,7 @@
     <script src="triggers.js"></script>
     <script src="ai.js"></script>
     <script src="game.js"></script>
+    <script src="multiplayer.js"></script>
 </body>
 
 </html>
