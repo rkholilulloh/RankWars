@@ -43,6 +43,8 @@
         <div class="lobby-modes-tabs card-blur">
             <button id="mode-solo-btn" class="mode-tab-btn active">⟡ SOLO</button>
             <button id="mode-squad-btn" class="mode-tab-btn">⟡ SQUAD</button>
+            <!-- style="background: linear-gradient(135deg, rgba(0, 255, 20, 0.08), rgba(0, 240, 255, 0.08)) !important; border-color: rgba(57, 255, 20, 0.4) !important; color: #39ff14 !important; text-shadow: 0 0 6px rgba(57, 255, 20, 0.45) !important;" -->
+            <button id="mode-training-btn" class="mode-tab-btn">⟡ TRAINING MODE</button>
             <button id="mode-lan-btn" class="mode-tab-btn" style="display: none;">⟡ LAN MULTIPLAYER HQ</button>
             <button id="how-to-play-btn" class="mode-tab-btn how-to-play-tab">📖 HOW TO PLAY</button>
         </div>
@@ -502,6 +504,11 @@
                                         <option value="ninomiya">Ninomiya Unit</option>
                                         <option value="kageura">Kageura Unit</option>
                                         <option value="arafune">Arafune Unit</option>
+                                        <option value="ikoma">Ikoma Unit</option>
+                                        <option value="nasu">Nasu Unit</option>
+                                        <option value="suwa">Suwa Unit</option>
+                                        <option value="azuma">Azuma Unit</option>
+                                        <option value="katori">Katori Unit</option>
                                     </select>
                                 </div>
                                 <div class="squad-members-list">
@@ -540,6 +547,11 @@
                                         <option value="ninomiya" selected>Ninomiya Unit</option>
                                         <option value="kageura">Kageura Unit</option>
                                         <option value="arafune">Arafune Unit</option>
+                                        <option value="ikoma">Ikoma Unit</option>
+                                        <option value="nasu">Nasu Unit</option>
+                                        <option value="suwa">Suwa Unit</option>
+                                        <option value="azuma">Azuma Unit</option>
+                                        <option value="katori">Katori Unit</option>
                                     </select>
                                 </div>
                                 <div class="squad-members-list">
@@ -580,6 +592,11 @@
                                         <option value="ninomiya">Ninomiya Unit</option>
                                         <option value="kageura" selected>Kageura Unit</option>
                                         <option value="arafune">Arafune Unit</option>
+                                        <option value="ikoma">Ikoma Unit</option>
+                                        <option value="nasu">Nasu Unit</option>
+                                        <option value="suwa">Suwa Unit</option>
+                                        <option value="azuma">Azuma Unit</option>
+                                        <option value="katori">Katori Unit</option>
                                     </select>
                                 </div>
                                 <div class="squad-members-list">
@@ -615,6 +632,27 @@
                             <button id="squad-randomize-btn" class="btn btn-secondary btn-md">RANDOMIZE RIVALS</button>
                             <button id="start-squad-battle-btn" class="btn btn-primary btn-lg animate-pulse">DEPLOY
                                 SQUAD</button>
+                        </div>
+                    </div>
+
+                    <!-- BORDER TRAINING SANDBOX PARAMETERS -->
+                    <div id="training-parameters" class="training-parameters card-blur"
+                        style="display: none; padding: 25px; border: 1px solid rgba(57, 255, 20, 0.3); box-shadow: 0 0 25px rgba(57, 255, 20, 0.1);">
+                        <h3
+                            style="color: #39ff14; text-shadow: 0 0 10px rgba(57, 255, 20, 0.4); margin-bottom: 12px; font-family: 'Orbitron', sans-serif;">
+                            🏛️ BORDER VIRTUAL TRAINING HQ</h3>
+                        <p
+                            style="font-size: 0.85rem; color: #ccc; margin-bottom: 25px; line-height: 1.5; font-family: 'Orbitron', sans-serif;">
+                            Welcome to the Virtual Training Simulator. Test new trigger combinations, program custom
+                            Viper curves, examine Raygust durability limits, or spawn combat trainers with adjustable
+                            bot aggression levels in a dedicated open training sandbox.
+                        </p>
+
+                        <div class="action-bar" style="margin-top: 15px;">
+
+                            <!-- style="background: linear-gradient(135deg, #005a10, #39ff14) !important; border-color: #39ff14 !important; color: #fff !important; text-shadow: 0 0 10px rgba(57, 255, 20, 0.5); font-family: 'Orbitron', sans-serif;" -->
+                            <button id="start-training-btn" class="btn btn-primary btn-lg animate-pulse">DEPLOY
+                                TO SANDBOX</button>
                         </div>
                     </div>
 
@@ -719,6 +757,9 @@
         <header class="game-hud card-blur">
             <div class="hud-left">
                 <button id="menu-btn" class="btn btn-secondary btn-sm">BAIL OUT (ESC)</button>
+                <button id="training-hud-btn" style="display: none;"
+                    onclick="document.getElementById('training-modal').classList.add('active')">🛠️ TRAINING
+                    BOX</button>
                 <div class="hud-stat-box">
                     <span class="label">MAP:</span>
                     <span id="hud-map-name" class="val">Cityscape</span>
@@ -766,7 +807,210 @@
         </header>
 
         <!-- GAMEPLAY CORE CONTAINER -->
-        <div class="arena-container">
+        <div class="arena-container" style="position: relative;">
+
+            <!-- TRAINING TOOLBOX MODAL -->
+            <div id="training-modal" class="training-modal-overlay">
+                <div class="training-modal-content">
+                    <div class="training-modal-header">
+                        <span>🛠️ Border Virtual Training HQ</span>
+                        <!-- <span id="training-status-badge"
+                            style="font-size: 0.6rem; background: var(--border-cyan); color: #000; padding: 2px 6px; border-radius: 3px; font-weight: 900;">SANDBOX</span> -->
+                        <button class="training-modal-close"
+                            onclick="document.getElementById('training-modal').classList.remove('active')">&times;</button>
+                    </div>
+
+                    <div class="training-modal-body">
+                        <div class="training-grid">
+                            <!-- LEFT COLUMN: MAIN HAND & INSTANT ACTIONS -->
+                            <div class="training-column main-hand">
+                                <!-- TRIGGER SWITCHER: MAIN HAND -->
+                                <div class="training-section">
+                                    <span class="training-section-title">MAIN TRIGGER [LEFT CLICK]</span>
+                                    <div id="training-main-slots" class="training-trigger-grid">
+                                        <!-- Attacker -->
+                                        <button class="training-slot-btn" data-trigger="Kogetsu"
+                                            onclick="switchTrainingTrigger('main', 'Kogetsu')">Kogetsu</button>
+                                        <!-- <button class="training-slot-btn" data-trigger="Senku"
+                                            onclick="switchTrainingTrigger('main', 'Senku')">Senku</button>
+                                        <button class="training-slot-btn" data-trigger="Genyo"
+                                            onclick="switchTrainingTrigger('main', 'Genyo')">Genyo</button> -->
+                                        <button class="training-slot-btn" data-trigger="Scorpion"
+                                            onclick="switchTrainingTrigger('main', 'Scorpion')">Scorpion</button>
+                                        <!-- <button class="training-slot-btn" data-trigger="Mole Claw"
+                                            onclick="switchTrainingTrigger('main', 'Mole Claw')">Mole Claw</button> -->
+                                        <button class="training-slot-btn" data-trigger="Raygust"
+                                            onclick="switchTrainingTrigger('main', 'Raygust')">Raygust</button>
+                                        <!-- <button class="training-slot-btn" data-trigger="Thruster"
+                                            onclick="switchTrainingTrigger('main', 'Thruster')">Thruster</button> -->
+
+                                        <div class="devider" style="grid-column: 1/-1; margin: 10px 0;"></div>
+                                        <!-- Shooter -->
+                                        <button class="training-slot-btn" data-trigger="Asteroid"
+                                            onclick="switchTrainingTrigger('main', 'Asteroid')">Asteroid</button>
+                                        <button class="training-slot-btn" data-trigger="Hound"
+                                            onclick="switchTrainingTrigger('main', 'Hound')">Hound</button>
+                                        <button class="training-slot-btn" data-trigger="Viper"
+                                            onclick="switchTrainingTrigger('main', 'Viper')">Viper</button>
+                                        <button class="training-slot-btn" data-trigger="Meteora"
+                                            onclick="switchTrainingTrigger('main', 'Meteora')">Meteora</button>
+
+                                        <div class="devider" style="grid-column: 1/-1; margin: 10px 0;"></div>
+                                        <!-- Sniper -->
+                                        <button class="training-slot-btn" data-trigger="Egret"
+                                            onclick="switchTrainingTrigger('main', 'Egret')">Egret</button>
+                                        <button class="training-slot-btn" data-trigger="Lightning"
+                                            onclick="switchTrainingTrigger('main', 'Lightning')">Lightning</button>
+                                        <button class="training-slot-btn" data-trigger="Ibis"
+                                            onclick="switchTrainingTrigger('main', 'Ibis')">Ibis</button>
+                                        <!-- Gunner -->
+                                        <button class="training-slot-btn" data-trigger="Assault Rifle"
+                                            onclick="switchTrainingTrigger('main', 'Assault Rifle')">Assault R.</button>
+                                        <button class="training-slot-btn" data-trigger="Shotgun"
+                                            onclick="switchTrainingTrigger('main', 'Shotgun')">Shotgun</button>
+
+                                        <div class="devider" style="grid-column: 1/-1; margin: 10px 0;"></div>
+                                        <!-- Support -->
+                                        <button class="training-slot-btn" data-trigger="Shield"
+                                            onclick="switchTrainingTrigger('main', 'Shield')">Shield</button>
+                                        <button class="training-slot-btn" data-trigger="Grasshopper"
+                                            onclick="switchTrainingTrigger('main', 'Grasshopper')">Grasshopper</button>
+                                        <button class="training-slot-btn" data-trigger="Spider"
+                                            onclick="switchTrainingTrigger('main', 'Spider')">Spider</button>
+                                        <button class="training-slot-btn" data-trigger="Teleporter"
+                                            onclick="switchTrainingTrigger('main', 'Teleporter')">Teleporter</button>
+                                        <!-- <button class="training-slot-btn" data-trigger="Lead Bullet"
+                                            onclick="switchTrainingTrigger('main', 'Lead Bullet')">Lead Bullet</button> -->
+                                        <button class="training-slot-btn" data-trigger="Bagworm"
+                                            onclick="switchTrainingTrigger('main', 'Bagworm')">Bagworm</button>
+                                        <!-- <button class="training-slot-btn" data-trigger="Empty"
+                                            onclick="switchTrainingTrigger('main', 'Empty')">Empty</button> -->
+                                    </div>
+                                </div>
+
+                                <!-- INSTANT ACTIONS -->
+                                <div class="training-section" style="margin-top: 15px;">
+                                    <span class="training-section-title"
+                                        style="color: #ffd700; border-left-color: #ffd700;">⚡ INSTANT ACTIONS</span>
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                        <button class="training-action-btn refill-btn"
+                                            onclick="window.trainingRefillTrion()">🔋 REFILL TRION</button>
+                                        <button class="training-action-btn refill-btn"
+                                            onclick="window.trainingRefillHP()">❤️ REFILL HP</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT COLUMN: SUB HAND & BOT SUMMONS -->
+                            <div class="training-column sub-hand">
+                                <!-- TRIGGER SWITCHER: SUB HAND -->
+                                <div class="training-section">
+                                    <span class="training-section-title">SUB TRIGGER [RIGHT CLICK]</span>
+                                    <div id="training-sub-slots" class="training-trigger-grid">
+                                        <!-- Attacker -->
+                                        <button class="training-slot-btn" data-trigger="Kogetsu"
+                                            onclick="switchTrainingTrigger('sub', 'Kogetsu')">Kogetsu</button>
+                                        <button class="training-slot-btn" data-trigger="Scorpion"
+                                            onclick="switchTrainingTrigger('sub', 'Scorpion')">Scorpion</button>
+                                        <button class="training-slot-btn" data-trigger="Raygust"
+                                            onclick="switchTrainingTrigger('sub', 'Raygust')">Raygust</button>
+                                        <button class="training-slot-btn" data-trigger="Senku"
+                                            onclick="switchTrainingTrigger('sub', 'Senku')">Senku</button>
+                                        <button class="training-slot-btn" data-trigger="Mole Claw"
+                                            onclick="switchTrainingTrigger('sub', 'Mole Claw')">Mole Claw</button>
+                                        <button class="training-slot-btn" data-trigger="Thruster"
+                                            onclick="switchTrainingTrigger('sub', 'Thruster')">Thruster</button>
+                                        <button class="training-slot-btn" data-trigger="Genyo"
+                                            onclick="switchTrainingTrigger('sub', 'Genyo')">Genyo</button>
+
+                                        <div class="devider" style="grid-column: 1/-1; margin: 10px 0;"></div>
+                                        <!-- Shooter -->
+                                        <button class="training-slot-btn" data-trigger="Asteroid"
+                                            onclick="switchTrainingTrigger('sub', 'Asteroid')">Asteroid</button>
+                                        <button class="training-slot-btn" data-trigger="Hound"
+                                            onclick="switchTrainingTrigger('sub', 'Hound')">Hound</button>
+                                        <button class="training-slot-btn" data-trigger="Viper"
+                                            onclick="switchTrainingTrigger('sub', 'Viper')">Viper</button>
+                                        <button class="training-slot-btn" data-trigger="Meteora"
+                                            onclick="switchTrainingTrigger('sub', 'Meteora')">Meteora</button>
+
+                                        <div class="devider" style="grid-column: 1/-1; margin: 10px 0;"></div>
+                                        <!-- Sniper -->
+                                        <button class="training-slot-btn" data-trigger="Egret"
+                                            onclick="switchTrainingTrigger('sub', 'Egret')">Egret</button>
+                                        <button class="training-slot-btn" data-trigger="Lightning"
+                                            onclick="switchTrainingTrigger('sub', 'Lightning')">Lightning</button>
+                                        <button class="training-slot-btn" data-trigger="Ibis"
+                                            onclick="switchTrainingTrigger('sub', 'Ibis')">Ibis</button>
+                                        <!-- Gunner -->
+                                        <button class="training-slot-btn" data-trigger="Assault Rifle"
+                                            onclick="switchTrainingTrigger('sub', 'Assault Rifle')">Assault R.</button>
+                                        <button class="training-slot-btn" data-trigger="Shotgun"
+                                            onclick="switchTrainingTrigger('sub', 'Shotgun')">Shotgun</button>
+
+                                        <div class="devider" style="grid-column: 1/-1; margin: 10px 0;"></div>
+                                        <!-- Support -->
+                                        <button class="training-slot-btn" data-trigger="Shield"
+                                            onclick="switchTrainingTrigger('sub', 'Shield')">Shield</button>
+                                        <button class="training-slot-btn" data-trigger="Grasshopper"
+                                            onclick="switchTrainingTrigger('sub', 'Grasshopper')">Grasshopper</button>
+                                        <button class="training-slot-btn" data-trigger="Spider"
+                                            onclick="switchTrainingTrigger('sub', 'Spider')">Spider</button>
+                                        <button class="training-slot-btn" data-trigger="Teleporter"
+                                            onclick="switchTrainingTrigger('sub', 'Teleporter')">Teleporter</button>
+                                        <button class="training-slot-btn" data-trigger="Lead Bullet"
+                                            onclick="switchTrainingTrigger('sub', 'Lead Bullet')">Lead Bullet</button>
+                                        <button class="training-slot-btn" data-trigger="Bagworm"
+                                            onclick="switchTrainingTrigger('sub', 'Bagworm')">Bagworm</button>
+                                        <!-- <button class="training-slot-btn" data-trigger="Empty"
+                                            onclick="switchTrainingTrigger('sub', 'Empty')">Empty</button> -->
+                                    </div>
+                                </div>
+
+                                <!-- TARGET DUMMIES CONTROLLER -->
+                                <div class="training-section" style="margin-top: 15px;">
+                                    <span class="training-section-title"
+                                        style="color: var(--border-green); border-left-color: var(--border-green);">🤖
+                                        SUMMON BOT TARGETS</span>
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                        <button class="training-bot-btn" style="flex: 1; text-align: center;"
+                                            onclick="spawnTrainingDummy('static')">🤖 STATIC</button>
+                                        <button class="training-bot-btn" style="flex: 1; text-align: center;"
+                                            onclick="spawnTrainingDummy('shield')">🛡️ SHIELD</button>
+                                        <button class="training-bot-btn" style="flex: 1; text-align: center;"
+                                            onclick="spawnTrainingDummy('combat')">⚔️ COMBAT</button>
+                                    </div>
+                                </div>
+
+                                <!-- COMBAT TRAINER AGGRESSIVENESS SLIDER -->
+                                <div id="combat-aggression-group" class="training-section"
+                                    style="display: none; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 4px; border: 1px dashed var(--border-cyan);">
+                                    <label
+                                        style="display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--border-cyan); font-size: 0.78rem;">
+                                        <span>BOT AGGRESSION:</span>
+                                        <span id="aggression-label" style="color: var(--border-cyan);">IDLE</span>
+                                    </label>
+                                    <input type="range" id="aggression-slider" min="0" max="3" value="0"
+                                        style="width: 100%; cursor: pointer;"
+                                        oninput="updateAggressionLevel(this.value)">
+                                    <div
+                                        style="display: flex; justify-content: space-between; font-size: 0.78rem; color: #aaa; margin-top: 2px;">
+                                        <span>IDLE</span>
+                                        <span>WALK</span>
+                                        <span>ATTACK</span>
+                                        <span>WARS</span>
+                                    </div>
+                                </div>
+
+                                <!-- CLEAR ALL BUTTON -->
+                                <button class="training-clear-btn" onclick="clearAllTrainingBots()"
+                                    style="width: 100%;">🧹 DESPAWN ALL BOTS</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- CANVAS ARENA -->
             <canvas id="game-canvas" width="900" height="600"></canvas>
 
@@ -892,7 +1136,7 @@
                     <ul>
                         <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> - Move Character</li>
                         <li><kbd>Mouse Cursor</kbd> - Face Direction / Aim</li>
-                        <li><kbd>Scroll Wheel</kbd> - Resize Shield (Small/Focus &harr; 360°/Shell)</li>
+                        <li><kbd>Scroll Wheel</kbd> - Zoom Camera (Sniper Scope — only when holding Sniper)</li>
                     </ul>
                 </div>
                 <div class="instr-col">
@@ -946,32 +1190,40 @@
                     <div class="htp-section">
                         <h3>🏃 MOVEMENT & AIM</h3>
                         <div class="htp-key-list">
-                            <div class="htp-key-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move Character (Up/Left/Down/Right)</span></div>
-                            <div class="htp-key-row"><kbd>Mouse Cursor</kbd><span>Aim Direction / Face Enemies</span></div>
-                            <div class="htp-key-row"><kbd>Scroll Wheel</kbd><span>Resize Shield (Focus ↔ 360° Shell)</span></div>
+                            <div class="htp-key-row"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span>Move
+                                    Character (Up/Left/Down/Right)</span></div>
+                            <div class="htp-key-row"><kbd>Mouse Cursor</kbd><span>Aim Direction / Face Enemies</span>
+                            </div>
+                            <div class="htp-key-row"><kbd>Scroll Wheel</kbd><span>Zoom Camera (Sniper Scope
+                                    — only when holding Sniper trigger)</span></div>
                         </div>
                     </div>
                     <div class="htp-section">
                         <h3>🗡️ MAIN HAND (Left Click)</h3>
                         <div class="htp-key-list">
-                            <div class="htp-key-row"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><span>Select Main Trigger Slot</span></div>
+                            <div class="htp-key-row"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd><span>Select Main
+                                    Trigger Slot</span></div>
                             <div class="htp-key-row"><kbd>Left Click</kbd><span>Use Active Main Trigger</span></div>
-                        </div>
-                    </div>
-                    <div class="htp-section">
-                        <h3>🛡️ SUB HAND (Right Click)</h3>
-                        <div class="htp-key-list">
-                            <div class="htp-key-row"><kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd><span>Select Sub Trigger Slot</span></div>
-                            <div class="htp-key-row"><kbd>Right Click</kbd><span>Use Active Sub Trigger</span></div>
                         </div>
                     </div>
                     <div class="htp-section">
                         <h3>💥 ADVANCED COMBOS</h3>
                         <div class="htp-key-list">
-                            <div class="htp-key-row"><kbd>Spacebar</kbd><span>Composite Bullet Fusion (Shooter triggers in both hands)</span></div>
-                            <div class="htp-key-row"><kbd>Hold Shift</kbd><span>Load Lead Bullet (if Lead Bullet is equipped)</span></div>
-                            <div class="htp-key-row"><kbd>Viper + Drag</kbd><span>Draw custom bullet path (click and drag to draw waypoints)</span></div>
+                            <div class="htp-key-row"><kbd>Spacebar</kbd><span>Composite Bullet Fusion (Shooter triggers
+                                    in both hands)</span></div>
+                            <div class="htp-key-row"><kbd>Hold Shift</kbd><span>Load Lead Bullet (if Lead Bullet is
+                                    equipped)</span></div>
+                            <!-- <div class="htp-key-row"><kbd>Viper + Drag</kbd><span>Draw custom bullet path (click and
+                                    drag to draw waypoints)</span></div> -->
                             <div class="htp-key-row"><kbd>ESC</kbd><span>Pause Simulation / Options Menu</span></div>
+                        </div>
+                    </div>
+                    <div class="htp-section">
+                        <h3>🛡️ SUB HAND (Right Click)</h3>
+                        <div class="htp-key-list">
+                            <div class="htp-key-row"><kbd>Q</kbd><kbd>E</kbd><kbd>R</kbd><kbd>F</kbd><span>Select Sub
+                                    Trigger Slot</span></div>
+                            <div class="htp-key-row"><kbd>Right Click</kbd><span>Use Active Sub Trigger</span></div>
                         </div>
                     </div>
                 </div>
@@ -982,29 +1234,42 @@
                 <div class="htp-rules-grid">
                     <div class="htp-section htp-rule-card">
                         <h3>🎯 OBJECTIVE</h3>
-                        <p>Eliminate all rival agents before the 5-minute timer expires. Each rival you eliminate grants <strong>+1 Point</strong>. The agent with the most points when time runs out wins the match.</p>
+                        <p>Eliminate all rival agents before the 5-minute timer expires. Each rival you eliminate grants
+                            <strong>+1 Point</strong>. The agent with the most points when time runs out wins the match.
+                        </p>
                     </div>
                     <div class="htp-section htp-rule-card">
                         <h3>⚡ TRION SYSTEM</h3>
-                        <p>Every trigger action consumes <strong>Trion</strong> (energy). Attacks, shields, and support triggers all cost Trion. When your Trion reaches 0, you enter <strong>BAIL OUT</strong> and are eliminated from the match.</p>
-                        <p class="htp-note">💡 Trion does NOT recharge! Fight wisely and conserve energy.</p>
+                        <p>Every trigger action consumes <strong>Trion</strong> (energy). Attacks, shields, and support
+                            triggers all cost Trion. When Trion reaches 0, you can no longer use triggers — but you
+                            stay in the fight! <strong>BAIL OUT</strong> only triggers when HP reaches 0.</p>
+                        <p class="htp-note">💡 Trion does NOT recharge! Conserve energy or fight with your fists.</p>
                     </div>
                     <div class="htp-section htp-rule-card">
                         <h3>❤️ HP & DAMAGE</h3>
-                        <p>Each agent has HP (Hit Points). When HP reaches 0, the agent is eliminated. Different triggers deal varying damage based on the attacker's <strong>Attack</strong> stat and the weapon's base power.</p>
+                        <p>Each agent has HP (Hit Points). When HP reaches 0, the agent is eliminated. Different
+                            triggers deal varying damage based on the attacker's <strong>Attack</strong> stat and the
+                            weapon's base power.</p>
                     </div>
                     <div class="htp-section htp-rule-card">
                         <h3>💼 BRIEFCASE SETUP</h3>
-                        <p>Before battle, configure your <strong>Trigger Briefcase</strong> with 4 Main and 4 Sub trigger slots. Click any slot in the lobby to swap triggers. Each agent has a default loadout you can customize.</p>
+                        <p>Before battle, configure your <strong>Trigger Briefcase</strong> with 4 Main and 4 Sub
+                            trigger slots. Click any slot in the lobby to swap triggers. Each agent has a default
+                            loadout you can customize.</p>
                     </div>
                     <div class="htp-section htp-rule-card">
                         <h3>🏆 MATCH MODES</h3>
-                        <p><strong>SOLO:</strong> Free-for-all battle against AI rivals. Select which agents to deploy and set difficulty.</p>
-                        <p><strong>SQUAD:</strong> Tactical 3v3v3 Team Rank Wars. Pick your teammates and face two rival squads. Points are tallied per team.</p>
+                        <p><strong>SOLO:</strong> Free-for-all battle against AI rivals. Select which agents to deploy
+                            and set difficulty.</p>
+                        <p><strong>SQUAD:</strong> Tactical 3v3v3 Team Rank Wars. Pick your teammates and face two rival
+                            squads. Points are tallied per team.</p>
                     </div>
                     <div class="htp-section htp-rule-card">
                         <h3>🛑 BAIL OUT</h3>
-                        <p>When eliminated, you can still spectate the match using <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to scroll the camera. Wait for the match to end naturally or click <strong>REDEPLOY</strong> to start a new match.</p>
+                        <p>When eliminated, you can still spectate the match using
+                            <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> to scroll the camera. Wait for the match to
+                            end naturally or click <strong>REDEPLOY</strong> to start a new match.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -1015,58 +1280,88 @@
                     <div class="htp-section htp-trigger-card cat-attacker">
                         <h3>⚔️ ATTACKER (Melee)</h3>
                         <div class="htp-trigger-list">
-                            <div class="htp-trigger-item"><strong>Kogetsu</strong> — Standard blade. High damage per hit, moderate reach.</div>
-                            <div class="htp-trigger-item"><strong>Scorpion</strong> — Morphing blade. Fast attacks, can extend range. Versatile.</div>
-                            <div class="htp-trigger-item"><strong>Raygust</strong> — Heavy shield-blade. Can switch between sword and defensive shield mode.</div>
-                            <div class="htp-trigger-item"><strong>Senku (Kogetsu)</strong> — Extended range slash. Sends a blade wave at medium range.</div>
-                            <div class="htp-trigger-item"><strong>Mole Claw</strong> — Underground surprise attack. Launches blade from beneath the ground.</div>
+                            <div class="htp-trigger-item"><strong>Kogetsu</strong> — Standard blade. High damage per
+                                hit, moderate reach.</div>
+                            <div class="htp-trigger-item"><strong>Scorpion</strong> — Lightweight agile blade. Ultra
+                                fast
+                                attacks, short range. Versatile close-quarters weapon.</div>
+                            <div class="htp-trigger-item"><strong>Raygust</strong> — Defense Attacker blade. Scroll
+                                mouse to toggle <strong>Blade / Shield Mode</strong>. Shield Mode saps speed by 50% but
+                                has 600 durability (15% Trion block cost, blocks Gimlet). Pairs with Thruster.</div>
+                            <div class="htp-trigger-item"><strong>Senku (Kogetsu)</strong> — Extended range slash. Sends
+                                a blade wave at medium range.</div>
+                            <div class="htp-trigger-item"><strong>Mole Claw</strong> — Underground surprise attack.
+                                Launches blade from beneath the ground.</div>
                         </div>
                     </div>
                     <div class="htp-section htp-trigger-card cat-shooter">
                         <h3>🔫 SHOOTER (Ranged)</h3>
                         <div class="htp-trigger-list">
-                            <div class="htp-trigger-item"><strong>Asteroid</strong> — Straight-line bullet. High power, no homing.</div>
-                            <div class="htp-trigger-item"><strong>Hound</strong> — Homing bullet. Tracks enemies but deals less damage.</div>
-                            <div class="htp-trigger-item"><strong>Viper</strong> — Custom-path bullet. Draw a flight path for curved shots.</div>
-                            <div class="htp-trigger-item"><strong>Meteora</strong> — Explosive shell. Detonates on impact, area damage.</div>
+                            <div class="htp-trigger-item"><strong>Asteroid</strong> — Straight-line bullet. High power,
+                                no homing.</div>
+                            <div class="htp-trigger-item"><strong>Hound</strong> — Homing bullet. Tracks enemies but
+                                deals less damage.</div>
+                            <div class="htp-trigger-item"><strong>Viper</strong> — Custom-path bullet. Draw a flight
+                                path for curved shots.</div>
+                            <div class="htp-trigger-item"><strong>Meteora</strong> — Explosive shell. Detonates on
+                                impact, area damage.</div>
                         </div>
                     </div>
                     <div class="htp-section htp-trigger-card cat-gunner">
                         <h3>🔫 GUNNER (Ranged Weapons)</h3>
                         <div class="htp-trigger-list">
-                            <div class="htp-trigger-item"><strong>Assault Rifle</strong> — Rapid-fire automatic. High rate, moderate damage.</div>
-                            <div class="htp-trigger-item"><strong>Shotgun</strong> — Close-range spread. Devastating at close distance.</div>
-                            <div class="htp-trigger-item"><strong>Handgun</strong> — Balanced pistol. Good accuracy and fire rate.</div>
+                            <div class="htp-trigger-item"><strong>Assault Rifle</strong> — Rapid-fire automatic. High
+                                rate, moderate damage.</div>
+                            <div class="htp-trigger-item"><strong>Shotgun</strong> — Close-range spread. Devastating at
+                                close distance.</div>
+                            <!-- <div class="htp-trigger-item"><strong>Handgun</strong> — Balanced pistol. Good accuracy and
+                                fire rate.</div> -->
                         </div>
                     </div>
                     <div class="htp-section htp-trigger-card cat-sniper">
                         <h3>🎯 SNIPER (Long Range)</h3>
                         <div class="htp-trigger-list">
-                            <div class="htp-trigger-item"><strong>Egret</strong> — Standard sniper. Good range and damage balance.</div>
-                            <div class="htp-trigger-item"><strong>Ibis</strong> — Heavy sniper. Extreme damage, can destroy walls.</div>
-                            <div class="htp-trigger-item"><strong>Lightning</strong> — Fastest sniper. Low damage, ultra-fast projectile.</div>
+                            <div class="htp-trigger-item"><strong>Egret</strong> — Standard sniper. Good range and
+                                damage balance.</div>
+                            <div class="htp-trigger-item"><strong>Lightning</strong> — Fastest sniper. Low damage,
+                                ultra-fast projectile.</div>
+                            <div class="htp-trigger-item"><strong>Ibis</strong> — Heavy sniper. Extreme damage, can
+                                destroy walls.</div>
                         </div>
                     </div>
                     <div class="htp-section htp-trigger-card cat-defense">
                         <h3>🛡️ DEFENSE & SUPPORT</h3>
                         <div class="htp-trigger-list">
-                            <div class="htp-trigger-item"><strong>Shield</strong> — Trion barrier. Blocks incoming projectiles. Scroll to resize.</div>
-                            <div class="htp-trigger-item"><strong>Bagworm</strong> — Stealth cloak. Hides you from enemy radar.</div>
-                            <div class="htp-trigger-item"><strong>Grasshopper</strong> — Launch pad. Creates a jump platform for aerial mobility.</div>
-                            <div class="htp-trigger-item"><strong>Spider</strong> — Tripwire net. Anchors between walls to trap/slow enemies.</div>
-                            <div class="htp-trigger-item"><strong>Thruster</strong> — Raygust booster. Dash forward at high speed.</div>
-                            <div class="htp-trigger-item"><strong>Lead Bullet</strong> — Heavy weight infusion. Slows hit enemies dramatically.</div>
+                            <div class="htp-trigger-item"><strong>Shield</strong> — Trion barrier. Scroll Mouse Wheel to
+                                resize (Standard 10-90°, Full 10-360°). Smaller angles have extremely high durability.
+                                Shatters if durability is depleted, entering a 3s cooldown.</div>
+                            <div class="htp-trigger-item"><strong>Bagworm</strong> — Stealth cloak. Hides you from enemy
+                                radar.</div>
+                            <div class="htp-trigger-item"><strong>Grasshopper</strong> — Launch pad. Creates a bounce
+                                platform that boosts you in your movement direction.</div>
+                            <div class="htp-trigger-item"><strong>Spider</strong> — Tripwire net. Anchors between walls
+                                to trap/slow enemies.</div>
+                            <div class="htp-trigger-item"><strong>Thruster</strong> — Raygust booster. Dash forward.
+                                Deals <strong>200 damage</strong> in Blade Mode; <strong>knocks back and stuns</strong>
+                                enemies in Shield Mode (Shield Bash).</div>
+                            <div class="htp-trigger-item"><strong>Lead Bullet</strong> — Heavy weight infusion. Slows
+                                hit enemies dramatically.</div>
                         </div>
                     </div>
                     <div class="htp-section htp-trigger-card cat-composite">
                         <h3>💫 COMPOSITE BULLETS (Spacebar Fusion)</h3>
                         <div class="htp-trigger-list">
-                            <div class="htp-trigger-item"><strong>Gimlet</strong> (Asteroid + Asteroid) — Armor-piercing bullet. Breaks shields.</div>
-                            <div class="htp-trigger-item"><strong>Tomahawk</strong> (Hound + Meteora) — Homing missile. Tracks and explodes.</div>
-                            <div class="htp-trigger-item"><strong>Salamander</strong> (Hound + Viper) — Intelligent tracker. Complex curves with homing.</div>
-                            <div class="htp-trigger-item"><strong>Hornet</strong> (Asteroid + Hound) — Hybrid bullet. Semi-homing with high damage.</div>
+                            <div class="htp-trigger-item"><strong>Gimlet</strong> (Asteroid + Asteroid) — Armor-piercing
+                                bullet. Breaks shields.</div>
+                            <div class="htp-trigger-item"><strong>Tomahawk</strong> (Hound + Meteora) — Homing missile.
+                                Tracks and explodes.</div>
+                            <div class="htp-trigger-item"><strong>Salamander</strong> (Hound + Viper) — Intelligent
+                                tracker. Complex curves with homing.</div>
+                            <div class="htp-trigger-item"><strong>Hornet</strong> (Asteroid + Hound) — Hybrid bullet.
+                                Semi-homing with high damage.</div>
                         </div>
-                        <p class="htp-note">💡 Equip Shooter triggers in BOTH Main & Sub slots to fuse. 1.8s charge time, can't move during fusion!</p>
+                        <p class="htp-note">💡 Equip Shooter triggers in BOTH Main & Sub slots to fuse. 1.8s charge
+                            time, can't move during fusion!</p>
                     </div>
                 </div>
             </div>

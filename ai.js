@@ -101,6 +101,10 @@ class AIAgent {
         this.isChameleonActive = false;
         this.isRaygustShieldActive = false;
         this.isShieldActive = false;
+        this.shieldDurabilityMax = 500;
+        this.shieldDurability = 500;
+        this.shieldCooldown = 0;
+        this.wasShieldActive = false;
         this.prefersBagworm = Math.random() < 0.65;
 
         // Timers & State Machine
@@ -134,19 +138,24 @@ class AIAgent {
 
         this.applyPreset(preset);
 
-        // Initial Bagworm activation for Snipers and Shooters to hide on player radar
-        const hasBagworm = this.briefcase.main.includes('Bagworm') || this.briefcase.sub.includes('Bagworm');
-        const hasSniper = this.briefcase.main.some(t => t === 'Egret' || t === 'Ibis' || t === 'Lightning');
-        const hasShooter = this.briefcase.main.some(t => {
-            const config = window.TRIGGER_CATALOG[t];
-            return config && config.category === 'shooter';
-        }) || this.briefcase.sub.some(t => {
-            const config = window.TRIGGER_CATALOG[t];
-            return config && config.category === 'shooter';
-        });
+        // Bagworm is forced OFF at construction time.
+        // During countdown, all agents are visible on radar so the player can assess positions.
+        // AI will activate Bagworm via evaluateState() once the match starts.
+        this.isBagwormActive = false;
+    }
 
-        if (hasBagworm && (hasSniper || hasShooter)) {
-            this.isBagwormActive = true;
+    smoothTurnTo(targetAngle) {
+        let diff = targetAngle - this.angle;
+        // Normalize diff to [-PI, PI]
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+
+        // Turn speed: 0.18 rad per frame (approx 10 degrees)
+        const maxStep = 0.18;
+        if (Math.abs(diff) > maxStep) {
+            this.angle += Math.sign(diff) * maxStep;
+        } else {
+            this.angle = targetAngle;
         }
     }
 
@@ -241,6 +250,8 @@ class AIAgent {
     }
 
     takeDamage(amount, attackerId, isLeadBullet = false, bulletType = '') {
+        // Training dummies can take damage and bail out normally.
+
         // If bodyHp is already 0, any hit triggers bail out
         if (this.bodyHp <= 0) {
             if (!this.bailedOut) {
@@ -281,7 +292,7 @@ class AIAgent {
             const isRaygustShield = this.isRaygustShieldActive;
             const isGimlet = bulletType === 'gimlet';
 
-            if (hasShield || isRaygustShield) {
+            if ((hasShield || isRaygustShield) && this.shieldCooldown <= 0) {
                 const attacker = (typeof allAgents !== 'undefined') ? allAgents.find(a => a.id === attackerId) : null;
                 if (attacker) {
                     let shouldBlock = false;
@@ -321,28 +332,51 @@ class AIAgent {
                     }
 
                     if (shouldBlock && (!isGimlet || isFullShield || isRaygustShield)) {
-                        if (isRaygustShield) {
-                            // Raygust Shield holds! Heavy defense: only 15% Trion cost drain
-                            this.trion -= amount * 0.15;
-                            window.audio.playShieldBlock();
+                        // Play block sound
+                        window.audio.playShieldBlock();
+
+                        // Spark color based on shield type
+                        const sparkColor = isRaygustShield ? '#00ff14' : (isFullShield ? '#ffd700' : '#39ff14');
+
+                        // Ensure shieldDurability/Max are initialized
+                        if (this.shieldDurabilityMax === undefined) this.shieldDurabilityMax = 500;
+                        if (this.shieldDurability === undefined) this.shieldDurability = this.shieldDurabilityMax;
+
+                        // Reduce durability
+                        this.shieldDurability -= amount;
+
+                        if (this.shieldDurability <= 0) {
+                            // Shield shatters!
+                            this.shieldDurability = 0;
+                            this.shieldCooldown = 180; // 3 seconds cooldown
+                            this.isShieldActive = false;
+                            this.isRaygustShieldActive = false;
+                            this.wasShieldActive = false;
+
                             if (window.spawnSparks) {
-                                window.spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#00ff14', 14);
+                                window.spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ff3b30', 25);
                             }
-                        } else if (isFullShield) {
-                            // Full Shield holds! Only drain 8% of the damage as Trion cost
-                            this.trion -= amount * 0.08;
-                            window.audio.playShieldBlock();
-                            if (window.spawnSparks) {
-                                window.spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ffd700', 16);
+                            if (typeof addLog !== 'undefined') {
+                                addLog(`[TACTICAL] ${this.name}'s Shield has been SHATTERED! Entering 3s cooldown.`, "kill");
                             }
                         } else {
-                            // Standard Shield holds! Completely block damage to Trion HP body, charge 25% Trion cost
-                            this.trion -= amount * 0.25;
-                            window.audio.playShieldBlock();
+                            // Shield holds! Spawn block sparks
                             if (window.spawnSparks) {
-                                window.spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#39ff14', 12);
+                                window.spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, sparkColor, 12);
+                            }
+                            
+                            // Also drain Trion normally for standard match bots (non-dummies)
+                            if (!this.isTrainingDummy) {
+                                if (isRaygustShield) {
+                                    this.trion -= amount * 0.15;
+                                } else if (isFullShield) {
+                                    this.trion -= amount * 0.08;
+                                } else {
+                                    this.trion -= amount * 0.25;
+                                }
                             }
                         }
+
                         if (this.trion <= 0) {
                             this.trion = 0;
                             this.isShieldActive = false;
@@ -396,6 +430,86 @@ class AIAgent {
 
     update(arena, allAgents, bullets, grPads, logs) {
         if (this.bailedOut) return;
+
+        if (this.isTrainingDummy) {
+            this.isLeaking = false;
+            
+            if (this.dummyType === 'static') {
+                this.vx = 0;
+                this.vy = 0;
+                this.isShieldActive = false;
+                this.isRaygustShieldActive = false;
+                return;
+            }
+            
+            if (this.dummyType === 'shield') {
+                this.vx = 0;
+                this.vy = 0;
+                const playerAgent = allAgents.find(a => a.id === 'player');
+                if (playerAgent) {
+                    this.angle = Math.atan2(playerAgent.y - this.y, playerAgent.x - this.x);
+                }
+                
+                // Initialize durability if not present
+                if (this.shieldDurability === undefined) {
+                    this.shieldDurabilityMax = 500;
+                    this.shieldDurability = 500;
+                    this.shieldCooldown = 0;
+                }
+                
+                if (this.shieldCooldown > 0) {
+                    this.shieldCooldown--;
+                    this.isShieldActive = false;
+                } else {
+                    if (!this.isShieldActive) {
+                        this.isShieldActive = true;
+                        this.shieldDurability = this.shieldDurabilityMax;
+                    }
+                }
+                
+                // Synchronize durability transitions for Shield Dummy
+                const shieldActive = this.isShieldActive;
+                if (shieldActive) {
+                    if (!this.wasShieldActive) {
+                        this.shieldDurability = this.shieldDurabilityMax;
+                    }
+                } else {
+                    this.shieldDurability = 0;
+                }
+                this.wasShieldActive = shieldActive;
+
+                this.trion = this.trionMax;
+                return;
+            }
+            
+            if (this.dummyType === 'combat') {
+                const aggression = typeof window.trainingAggression !== 'undefined' ? window.trainingAggression : 0;
+                if (aggression === 0) {
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.isShieldActive = false;
+                    this.isRaygustShieldActive = false;
+                    return;
+                }
+            }
+        }
+
+        // Update shield durability and cooldown for standard match bots and combat trainer
+        if (this.shieldCooldown > 0) {
+            this.shieldCooldown--;
+            this.isShieldActive = false;
+        }
+
+        const shieldActive = this.isShieldActive && this.trion > 0 && this.shieldCooldown <= 0;
+        if (shieldActive) {
+            if (!this.wasShieldActive) {
+                this.shieldDurability = this.shieldDurabilityMax || 500;
+            }
+            this.shieldDurability = Math.min(this.shieldDurability || 500, this.shieldDurabilityMax || 500);
+        } else {
+            this.shieldDurability = 0;
+        }
+        this.wasShieldActive = shieldActive;
 
         // Decrement cooldowns based on difficulty
         let cdReduction = 16.67; // ms (approx 60fps frame)
@@ -696,7 +810,7 @@ class AIAgent {
             if (dist > 15) {
                 this.vx = (dx / dist) * currentSpeed;
                 this.vy = (dy / dist) * currentSpeed;
-                this.angle = Math.atan2(dy, dx);
+                this.smoothTurnTo(Math.atan2(dy, dx));
             } else {
                 this.vx = 0;
                 this.vy = 0;
@@ -757,11 +871,26 @@ class AIAgent {
         // 3. COMBAT ACTIONS & TRIGGER USE
         if (this.targetAgent && threatDist < engageDist && (!this.stunTimer || this.stunTimer <= 0)) {
             // Aim facing vector at threat
-            this.angle = Math.atan2(this.targetAgent.y - this.y, this.targetAgent.x - this.x);
+            this.smoothTurnTo(Math.atan2(this.targetAgent.y - this.y, this.targetAgent.x - this.x));
 
             // Execute specific trigger attacks (only if trion > 0)
             if (this.trion > 0) {
-                this.performCombatAction(threatDist, bullets, grPads, arena);
+                if (this.isTrainingDummy && this.dummyType === 'combat') {
+                    const aggression = typeof window.trainingAggression !== 'undefined' ? window.trainingAggression : 0;
+                    if (aggression === 1) {
+                        // WALK ONLY - DO NOT ATTACK
+                    } else if (aggression === 2) {
+                        // Slow attack rate: 8% chance per frame to attack
+                        if (Math.random() < 0.08) {
+                            this.performCombatAction(threatDist, bullets, grPads, arena);
+                        }
+                    } else if (aggression === 3) {
+                        // Full attack
+                        this.performCombatAction(threatDist, bullets, grPads, arena);
+                    }
+                } else {
+                    this.performCombatAction(threatDist, bullets, grPads, arena);
+                }
             }
         }
     }
@@ -896,8 +1025,9 @@ class AIAgent {
         if (hasSpider && dist < 240 && this.cooldowns.sub <= 0 && this.trion >= 40 && Math.random() > 0.65) {
             // Smart tactical anchor search
             const nearbySolidTiles = [];
+            const nearbyEmptyTiles = [];
             const searchRadius = 240;
-            
+
             const startCol = Math.max(0, Math.floor((this.x - searchRadius) / arena.tileSize));
             const endCol = Math.min(arena.cols - 1, Math.floor((this.x + searchRadius) / arena.tileSize));
             const startRow = Math.max(0, Math.floor((this.y - searchRadius) / arena.tileSize));
@@ -906,26 +1036,53 @@ class AIAgent {
             for (let r = startRow; r <= endRow; r++) {
                 for (let c = startCol; c <= endCol; c++) {
                     const tile = arena.grid[r][c];
-                    if (tile && tile.type !== 'empty') {
+                    if (tile) {
                         const tx = tile.x + arena.tileSize / 2;
                         const ty = tile.y + arena.tileSize / 2;
                         const d = Math.sqrt((tx - this.x) ** 2 + (ty - this.y) ** 2);
                         if (d <= searchRadius) {
-                            nearbySolidTiles.push({ x: tx, y: ty });
+                            if (tile.type !== 'empty') {
+                                nearbySolidTiles.push({ x: tx, y: ty });
+                            } else {
+                                nearbyEmptyTiles.push({ x: tx, y: ty });
+                            }
                         }
                     }
                 }
             }
 
-            // Find all valid obstacle center pairs separated by <= 200px (Anchor Distance Limit!)
+            // Find all valid obstacle/floor pairs separated by 40px to 240px
+            // At least one of the anchors must be solid (a wall/building/border)
             let validPairs = [];
+
+            // 1. Solid-to-Solid pairs
             for (let i = 0; i < nearbySolidTiles.length; i++) {
                 for (let j = i + 1; j < nearbySolidTiles.length; j++) {
                     const t1 = nearbySolidTiles[i];
                     const t2 = nearbySolidTiles[j];
                     const d = Math.sqrt((t1.x - t2.x) ** 2 + (t1.y - t2.y) ** 2);
-                    if (d >= 40 && d <= 200) {
-                        validPairs.push({ t1, t2, d });
+                    if (d >= 40 && d <= 240) {
+                        const midX = (t1.x + t2.x) / 2;
+                        const midY = (t1.y + t2.y) / 2;
+                        if (!arena.isWall(midX, midY)) {
+                            validPairs.push({ t1, t2, d });
+                        }
+                    }
+                }
+            }
+
+            // 2. Solid-to-Empty pairs
+            for (let i = 0; i < nearbySolidTiles.length; i++) {
+                for (let j = 0; j < nearbyEmptyTiles.length; j++) {
+                    const t1 = nearbySolidTiles[i];
+                    const t2 = nearbyEmptyTiles[j];
+                    const d = Math.sqrt((t1.x - t2.x) ** 2 + (t1.y - t2.y) ** 2);
+                    if (d >= 40 && d <= 240) {
+                        const midX = (t1.x + t2.x) / 2;
+                        const midY = (t1.y + t2.y) / 2;
+                        if (!arena.isWall(midX, midY)) {
+                            validPairs.push({ t1, t2, d });
+                        }
                     }
                 }
             }
@@ -1049,9 +1206,9 @@ class AIAgent {
                 const weaponName = selectedSlot.name;
 
                 // A. Sniper Quota checks
-                if (weaponName === 'Egret' && this.egretCount >= 10) return;
-                if (weaponName === 'Ibis' && this.ibisCount >= 5) return;
-                if (weaponName === 'Lightning' && this.lightningCount >= 15) return;
+                if (weaponName === 'Egret' && this.egretCount >= 50) return;
+                if (weaponName === 'Ibis' && this.ibisCount >= 25) return;
+                if (weaponName === 'Lightning' && this.lightningCount >= 75) return;
 
                 // B. Target zigzag tracking & fire restriction
                 let isZigzagging = false;
@@ -1245,7 +1402,7 @@ class AIAgent {
                 isTargetVulnerable = isTargetReloading || isTargetLookingAway;
             }
 
-            if (activeMainName === 'Kogetsu' && hasSenku && this.senkuCount < 3 && isTargetVulnerable && dist > 45 && dist < 160 && this.cooldowns.sub <= 0 && this.trion >= 60) {
+            if (activeMainName === 'Kogetsu' && hasSenku && this.senkuCount < 15 && isTargetVulnerable && dist > 45 && dist < 160 && this.cooldowns.sub <= 0 && this.trion >= 60) {
                 this.isBagwormActive = false;
                 this.trion -= 60;
                 this.senkuCount++; // Consumes 1 Senku charges (limit 3 per match)
@@ -1322,8 +1479,8 @@ class AIAgent {
 
             // 1. Quota & Delay Checks
             if (this.shooterDelayTimer > 0) return;
-            if (bulletType === 'asteroid' && this.asteroidCount >= 40) return;
-            if (bulletType === 'meteora' && this.meteoraCount >= 10) return;
+            if (bulletType === 'asteroid' && this.asteroidCount >= 200) return;
+            if (bulletType === 'meteora' && this.meteoraCount >= 50) return;
 
             let bulletCost = activeMainConfig.trionCost + (leadActive ? 40 : 0);
             let fireDouble = isDualShooter;
@@ -1575,7 +1732,7 @@ class AIAgent {
 
             // 2. Increment magazine count & reload trigger
             this.gunnerFiredCount++;
-            if (this.gunnerFiredCount >= 10) {
+            if (this.gunnerFiredCount >= 15) {
                 this.gunnerReloadTimer = 1500; // 1.5 seconds reload state
                 this.gunnerFiredCount = 0;     // Reset magazine
                 this.isShieldActive = true;    // Instantly trigger defensive shield
@@ -1790,6 +1947,19 @@ class AIAgent {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
             ctx.lineWidth = 0.5;
             ctx.strokeRect(barX, barY2, barWidth, barHeight);
+
+            // Shield Durability Bar (Yellow-Orange, only if active)
+            if (this.shieldDurability > 0) {
+                const barY3 = this.y - 43;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(barX, barY3, barWidth, barHeight);
+                const shieldFillWidth = Math.max(0, Math.min(1, this.shieldDurability / (this.shieldDurabilityMax || 500))) * barWidth;
+                ctx.fillStyle = '#ffdf00'; // Shield Yellow
+                ctx.fillRect(barX, barY3, shieldFillWidth, barHeight);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.lineWidth = 0.5;
+                ctx.strokeRect(barX, barY3, barWidth, barHeight);
+            }
 
             ctx.restore();
         }

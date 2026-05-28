@@ -2084,6 +2084,7 @@ kbd {
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     z-index: 10;
     position: relative;
+    flex-wrap: wrap;
 }
 
 .mode-tab-btn {
@@ -2573,7 +2574,7 @@ kbd {
    ========================================================================== */
 
 .how-to-play-tab {
-    margin-left: auto !important;
+    /* margin-left: auto !important; */
     background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(120, 80, 255, 0.15)) !important;
     border: 1px solid rgba(0, 240, 255, 0.4) !important;
     color: #00f0ff !important;
@@ -2816,12 +2817,29 @@ kbd {
     border-radius: 4px 0 0 4px;
 }
 
-.cat-attacker::before { background: linear-gradient(180deg, #ff6b35, #ff3b30); }
-.cat-shooter::before { background: linear-gradient(180deg, #00c6ff, #0072ff); }
-.cat-gunner::before { background: linear-gradient(180deg, #ffc107, #ff9800); }
-.cat-sniper::before { background: linear-gradient(180deg, #8e44ad, #6c3483); }
-.cat-defense::before { background: linear-gradient(180deg, #2ecc71, #27ae60); }
-.cat-composite::before { background: linear-gradient(180deg, #f39c12, #e74c3c); }
+.cat-attacker::before {
+    background: linear-gradient(180deg, #ff6b35, #ff3b30);
+}
+
+.cat-shooter::before {
+    background: linear-gradient(180deg, #00c6ff, #0072ff);
+}
+
+.cat-gunner::before {
+    background: linear-gradient(180deg, #ffc107, #ff9800);
+}
+
+.cat-sniper::before {
+    background: linear-gradient(180deg, #8e44ad, #6c3483);
+}
+
+.cat-defense::before {
+    background: linear-gradient(180deg, #2ecc71, #27ae60);
+}
+
+.cat-composite::before {
+    background: linear-gradient(180deg, #f39c12, #e74c3c);
+}
 
 .htp-trigger-list {
     display: flex;
@@ -2854,8 +2872,8 @@ kbd {
    ========================================================================== */
 
 .countdown-overlay {
-    background: rgba(2, 3, 8, 0.92) !important;
-    backdrop-filter: blur(15px);
+    background: rgb(21 21 21 / 0%) !important;
+    backdrop-filter: blur(0px);
     z-index: 1001 !important;
 }
 
@@ -2870,8 +2888,15 @@ kbd {
 }
 
 @keyframes countdownFadeIn {
-    from { opacity: 0; transform: scale(0.85); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+        transform: scale(0.85);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }
 
 .countdown-title {
@@ -2897,7 +2922,7 @@ kbd {
     font-size: 8rem;
     font-weight: 900;
     color: #fff;
-    text-shadow: 
+    text-shadow:
         0 0 40px rgba(0, 240, 255, 0.8),
         0 0 80px rgba(0, 240, 255, 0.4),
         0 0 120px rgba(0, 240, 255, 0.2);
@@ -2908,8 +2933,17 @@ kbd {
 }
 
 @keyframes countdownPulse {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.08); opacity: 0.85; }
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.08);
+        opacity: 0.85;
+    }
 }
 
 .countdown-label {
@@ -2943,8 +2977,13 @@ kbd {
 }
 
 @keyframes countdownBarShimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
 }
 
 /* Countdown number transition effect */
@@ -2953,15 +2992,25 @@ kbd {
 }
 
 @keyframes countdownPop {
-    0% { transform: scale(1.6); opacity: 0.3; }
-    60% { transform: scale(0.95); }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+        transform: scale(1.6);
+        opacity: 0.3;
+    }
+
+    60% {
+        transform: scale(0.95);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* GO text style override */
 .countdown-number.go-text {
     color: #00ff88;
-    text-shadow: 
+    text-shadow:
         0 0 40px rgba(0, 255, 136, 0.8),
         0 0 80px rgba(0, 255, 136, 0.4),
         0 0 120px rgba(0, 255, 136, 0.2);
@@ -2969,9 +3018,20 @@ kbd {
 }
 
 @keyframes goFlash {
-    0% { transform: scale(2); opacity: 0; }
-    50% { transform: scale(0.9); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+        transform: scale(2);
+        opacity: 0;
+    }
+
+    50% {
+        transform: scale(0.9);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Responsive adjustments for HTP modal */
@@ -3004,4 +3064,225 @@ kbd {
         font-size: 1.2rem;
         letter-spacing: 3px;
     }
+}
+
+/* ==========================================================================
+   VIRTUAL TRAINING MODE OVERLAY STYLES
+   ========================================================================== */
+
+.training-slot-btn {
+    background: rgba(0, 240, 255, 0.06) !important;
+    border: 1px solid var(--border-gray);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    /* font-size: 0.65rem; */
+    padding: 8px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* text-shadow: 0 0 4px rgba(0, 240, 255, 0.3); */
+}
+
+.training-slot-btn:hover {
+    background: rgba(0, 240, 255, 0.25) !important;
+    border-color: #00f0ff !important;
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.35);
+}
+
+.training-slot-btn.active {
+    background: rgba(0, 240, 255, 0.25) !important;
+    border-color: #00f0ff !important;
+    /* color: #ffffff !important; */
+    /* font-weight: 700; */
+    /* box-shadow: 0 0 10px rgba(0, 240, 255, 0.5); */
+    /* text-shadow: 0 0 6px #fff; */
+}
+
+.training-bot-btn {
+    background: rgba(57, 255, 20, 0.06) !important;
+    border: 1px solid var(--border-gray);
+    color: var(--text-primary);
+    font-family: 'Inter';
+    /* font-size: 0.65rem; */
+    padding: 8px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s ease;
+    text-shadow: 0 0 4px rgba(57, 255, 20, 0.3);
+}
+
+.training-bot-btn:hover {
+    background: rgba(57, 255, 20, 0.18) !important;
+    border-color: #39ff14 !important;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+}
+
+.training-clear-btn {
+    background: rgba(255, 59, 48, 0.08) !important;
+    border: 1px solid var(--border-gray);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    /* font-size: 0.65rem; */
+    padding: 8px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* text-shadow: 0 0 4px rgba(255, 59, 48, 0.3); */
+}
+
+.training-clear-btn:hover {
+    background: rgba(255, 59, 48, 0.22) !important;
+    border-color: #ff3b30 !important;
+    box-shadow: 0 0 8px rgba(255, 59, 48, 0.35);
+}
+
+/* TRAINING MODE HUD BUTTON */
+#training-hud-btn {
+    background: rgba(14, 22, 29, 0.92) !important;
+    border: 2px solid var(--border-cyan) !important;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: var(--font-cyber);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--border-cyan) !important;
+    cursor: pointer;
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.5);
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.2);
+    transition: all 0.25s ease;
+    margin-left: 10px;
+}
+
+#training-hud-btn:hover {
+    background: rgba(0, 240, 255, 0.15) !important;
+    border-color: var(--border-cyan) !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+}
+
+/* TRAINING MODE MODAL OVERLAY & CONTENT */
+.training-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(0px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.training-modal-overlay.active {
+    display: flex;
+}
+
+.training-modal-content {
+    background: rgba(10, 17, 24, 0.58);
+    border: 1px solid var(--border-cyan);
+    border-radius: 8px;
+    width: 95%;
+    max-width: 980px;
+    /* Expanded for two-column grid */
+    max-height: 90vh;
+    /* box-shadow: var(--shadow-glow); */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-family: var(--font-cyber);
+    color: var(--text-primary);
+}
+
+.training-modal-header {
+    background: rgba(0, 240, 255, 0.05);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    color: var(--border-cyan);
+    font-size: 1rem;
+    letter-spacing: 1px;
+}
+
+.training-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.6rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s ease;
+}
+
+.training-modal-close:hover {
+    color: var(--border-cyan);
+}
+
+.training-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Restyled Split columns grid inside the body */
+.training-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    width: 100%;
+}
+
+.training-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.training-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.training-section-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    color: var(--text-accent);
+    font-family: var(--font-cyber);
+    border-left: 3px solid var(--border-cyan);
+    padding-left: 8px;
+}
+
+.training-trigger-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+}
+
+.training-action-btn.refill-btn {
+    flex: 1;
+    background: rgba(255, 215, 0, 0.08) !important;
+    border: 1px solid var(--border-gray);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: var(--font-main);
+    /* font-size: 0.7rem; */
+    /* font-weight: 700; */
+    cursor: pointer;
+    transition: all 0.2s ease;
+    /* text-shadow: 0 0 4px rgba(255, 215, 0, 0.3); */
+}
+
+.training-action-btn.refill-btn:hover {
+    background: rgba(255, 215, 0, 0.2) !important;
+    border-color: #ffd700 !important;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
 }

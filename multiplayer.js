@@ -250,9 +250,11 @@ class MultiplayerManager {
     initializeUIListeners() {
         const modeSoloBtn = document.getElementById('mode-solo-btn');
         const modeSquadBtn = document.getElementById('mode-squad-btn');
+        const modeTrainingBtn = document.getElementById('mode-training-btn');
         const modeLanBtn = document.getElementById('mode-lan-btn');
         const soloParams = document.getElementById('solo-parameters');
         const squadParams = document.getElementById('squad-parameters');
+        const trainingParams = document.getElementById('training-parameters');
         const lanParams = document.getElementById('lan-parameters');
 
         window.gameMode = 'solo';
@@ -260,9 +262,11 @@ class MultiplayerManager {
         modeSoloBtn.addEventListener('click', () => {
             modeSoloBtn.classList.add('active');
             modeSquadBtn.classList.remove('active');
+            if (modeTrainingBtn) modeTrainingBtn.classList.remove('active');
             modeLanBtn.classList.remove('active');
             soloParams.style.display = 'block';
             squadParams.style.display = 'none';
+            if (trainingParams) trainingParams.style.display = 'none';
             lanParams.style.display = 'none';
             window.gameMode = 'solo';
             window.isMultiplayer = false;
@@ -273,9 +277,11 @@ class MultiplayerManager {
         modeSquadBtn.addEventListener('click', () => {
             modeSquadBtn.classList.add('active');
             modeSoloBtn.classList.remove('active');
+            if (modeTrainingBtn) modeTrainingBtn.classList.remove('active');
             modeLanBtn.classList.remove('active');
             soloParams.style.display = 'none';
             squadParams.style.display = 'block';
+            if (trainingParams) trainingParams.style.display = 'none';
             lanParams.style.display = 'none';
             window.gameMode = 'squad';
             window.isMultiplayer = false;
@@ -286,12 +292,31 @@ class MultiplayerManager {
             }
         });
 
+        if (modeTrainingBtn) {
+            modeTrainingBtn.addEventListener('click', () => {
+                modeTrainingBtn.classList.add('active');
+                modeSoloBtn.classList.remove('active');
+                modeSquadBtn.classList.remove('active');
+                modeLanBtn.classList.remove('active');
+                soloParams.style.display = 'none';
+                squadParams.style.display = 'none';
+                if (trainingParams) trainingParams.style.display = 'block';
+                lanParams.style.display = 'none';
+                window.gameMode = 'training';
+                window.isMultiplayer = false;
+                this.disconnect();
+                this.logStatus("Switched to Virtual Training Simulator HQ.");
+            });
+        }
+
         modeLanBtn.addEventListener('click', () => {
             modeLanBtn.classList.add('active');
             modeSoloBtn.classList.remove('active');
             modeSquadBtn.classList.remove('active');
+            if (modeTrainingBtn) modeTrainingBtn.classList.remove('active');
             soloParams.style.display = 'none';
             squadParams.style.display = 'none';
+            if (trainingParams) trainingParams.style.display = 'none';
             lanParams.style.display = 'block';
             window.gameMode = 'lan';
             window.isMultiplayer = true;

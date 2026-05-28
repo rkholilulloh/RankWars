@@ -79,6 +79,7 @@ const particles = []; // glowing sparks, digital blocks, slashes
 // Interactive Drawing States
 let tempViperWaypoints = [];
 let isDrawingViper = false;
+let viperDrawingHand = null;
 
 let spiderAnchor = null; // first click coordinate for Spider Wire {x, y}
 
@@ -176,6 +177,12 @@ function setupAgentSelectors() {
             activeBriefcase.main = [...data.main];
             activeBriefcase.sub = [...data.sub];
             renderBriefcaseHTML();
+
+            // Immediately update Squad Mode captain label
+            const label = document.getElementById('team-1-member-1-label');
+            if (label) {
+                label.textContent = data.name;
+            }
         });
     });
 }
@@ -441,6 +448,16 @@ function setupDeployButton() {
         window.audio.resume();
         startSimulation();
     });
+
+    // Training Sandbox deploy button
+    const trainingBtn = document.getElementById('start-training-btn');
+    if (trainingBtn) {
+        trainingBtn.addEventListener('click', () => {
+            window.audio.init();
+            window.audio.resume();
+            startSimulation();
+        });
+    }
 }
 
 /* ==========================================================================
@@ -502,16 +519,30 @@ function setupMouseListeners() {
 
         if (e.button === 0) {
             isLeftMouseDown = true;
+            window.isLeftMouseDown = true;
 
             // Check if drawing Viper path
             const activeTrig = player.briefcase.main[player.activeMainIndex];
             if (activeTrig === 'Viper') {
                 isDrawingViper = true;
+                viperDrawingHand = 'main';
                 const wm = getWorldMouse();
                 tempViperWaypoints = [{ x: wm.x, y: wm.y }];
             }
         }
-        if (e.button === 2) isRightMouseDown = true;
+        if (e.button === 2) {
+            isRightMouseDown = true;
+            window.isRightMouseDown = true;
+
+            // Check if drawing Viper path for sub hand (right click)
+            const activeTrig = player.briefcase.sub[player.activeSubIndex];
+            if (activeTrig === 'Viper') {
+                isDrawingViper = true;
+                viperDrawingHand = 'sub';
+                const wm = getWorldMouse();
+                tempViperWaypoints = [{ x: wm.x, y: wm.y }];
+            }
+        }
     });
 
     let lastTap = 0;
@@ -527,14 +558,26 @@ function setupMouseListeners() {
         if (tapLength < 300 && tapLength > 0) {
             // Double tap - right click
             isRightMouseDown = true;
+            window.isRightMouseDown = true;
             isLeftMouseDown = false;
+            window.isLeftMouseDown = false;
+
+            const activeTrig = player.briefcase.sub[player.activeSubIndex];
+            if (activeTrig === 'Viper') {
+                isDrawingViper = true;
+                viperDrawingHand = 'sub';
+                const wm = getWorldMouse();
+                tempViperWaypoints = [{ x: wm.x, y: wm.y }];
+            }
         } else {
             // Single tap - left click
             isLeftMouseDown = true;
+            window.isLeftMouseDown = true;
 
             const activeTrig = player.briefcase.main[player.activeMainIndex];
             if (activeTrig === 'Viper') {
                 isDrawingViper = true;
+                viperDrawingHand = 'main';
                 const wm = getWorldMouse();
                 tempViperWaypoints = [{ x: wm.x, y: wm.y }];
             }
@@ -545,36 +588,70 @@ function setupMouseListeners() {
     window.addEventListener('mouseup', (e) => {
         if (e.button === 0) {
             isLeftMouseDown = false;
+            window.isLeftMouseDown = false;
             // Trigger Viper projectile release
-            if (isDrawingViper) {
+            if (isDrawingViper && viperDrawingHand === 'main') {
                 isDrawingViper = false;
-                fireViperWaypoints();
+                viperDrawingHand = null;
+                fireViperWaypoints('main');
             }
         }
-        if (e.button === 2) isRightMouseDown = false;
+        if (e.button === 2) {
+            isRightMouseDown = false;
+            window.isRightMouseDown = false;
+            // Trigger Viper projectile release for right click
+            if (isDrawingViper && viperDrawingHand === 'sub') {
+                isDrawingViper = false;
+                viperDrawingHand = null;
+                fireViperWaypoints('sub');
+            }
+        }
     });
 
     window.addEventListener('touchend', (e) => {
         isLeftMouseDown = false;
+        window.isLeftMouseDown = false;
         isRightMouseDown = false;
+        window.isRightMouseDown = false;
         if (isDrawingViper) {
             isDrawingViper = false;
-            fireViperWaypoints();
+            const hand = viperDrawingHand || 'main';
+            viperDrawingHand = null;
+            fireViperWaypoints(hand);
         }
     });
 
-    // Resize camera using scroll wheel for snipers
+    // Resize camera using scroll wheel for snipers OR resize shield
     canvas.addEventListener('wheel', (e) => {
         if (!matchActive || !player) return;
         e.preventDefault();
 
         const activeMainTrig = player.briefcase.main[player.activeMainIndex];
+        const activeSubTrig = player.briefcase.sub[player.activeSubIndex];
         const isHoldingSniper = (activeMainTrig === 'Egret' || activeMainTrig === 'Ibis' || activeMainTrig === 'Lightning');
+        const hasShieldMain = activeMainTrig === 'Shield';
+        const hasShieldSub = activeSubTrig === 'Shield';
+        const isHoldingShield = hasShieldMain || hasShieldSub;
+
+        const hasRaygustMain = activeMainTrig === 'Raygust';
+        const hasRaygustSub = activeSubTrig === 'Raygust';
 
         if (isHoldingSniper) {
             // Adjust camera zoom: scroll down (deltaY > 0) to zoom out, scroll up (deltaY < 0) to zoom in
             const direction = e.deltaY > 0 ? -1 : 1;
             cameraZoom = Math.max(0.45, Math.min(1.0, cameraZoom + direction * 0.05));
+        } else if (hasRaygustMain || hasRaygustSub) {
+            // Raygust toggle: toggle mode between 'blade' and 'shield'
+            player.raygustMode = (player.raygustMode === 'shield') ? 'blade' : 'shield';
+            addLog(`[TACTICAL] Raygust morphed to ${player.raygustMode.toUpperCase()} Mode!`, "system");
+        } else if (isHoldingShield) {
+            const bothAreShield = hasShieldMain && hasShieldSub;
+            const direction = e.deltaY > 0 ? 1 : -1; // scroll down = expand (+), scroll up = shrink (-)
+            if (bothAreShield) {
+                player.shieldAngleFull = Math.max(10, Math.min(360, (player.shieldAngleFull || 360) + direction * 15));
+            } else {
+                player.shieldAngleStandard = Math.max(10, Math.min(90, (player.shieldAngleStandard || 90) + direction * 5));
+            }
         }
     });
 
@@ -629,6 +706,11 @@ function setupMouseListeners() {
 function startSimulation() {
     if (window.gameMode === 'squad') {
         startSquadSimulation();
+        return;
+    }
+
+    if (window.gameMode === 'training') {
+        startTrainingSimulation();
         return;
     }
 
@@ -781,7 +863,18 @@ function startSimulation() {
         activeMainIndex: 0,
         activeSubIndex: 0,
 
-        shieldAngle: 90, // scrollable shield degree
+        shieldAngleStandard: 90,
+        shieldAngleFull: 360,
+        shieldDurability: 500,
+        shieldDurabilityMax: 500,
+        shieldCooldown: 0,
+        wasShieldActive: false,
+        isRaygustShieldActive: false,
+        raygustMode: 'blade', // 'blade' or 'shield'
+        raygustDurability: 600,
+        raygustDurabilityMax: 600,
+        raygustShieldCooldown: 0,
+        wasRaygustShieldActive: false,
 
         // Passive Camouflage
         isBagwormActive: false,
@@ -824,11 +917,11 @@ function startSimulation() {
 
             if (bothAreShield) {
                 const eitherPressed = isLeftMouseDown || isRightMouseDown;
-                mainShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
-                subShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
+                mainShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0 && this.shieldCooldown <= 0;
+                subShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0 && this.shieldCooldown <= 0;
             } else {
-                mainShieldActive = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.trion > 0;
-                subShieldActive = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.trion > 0;
+                mainShieldActive = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.trion > 0 && this.shieldCooldown <= 0;
+                subShieldActive = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.trion > 0 && this.shieldCooldown <= 0;
             }
 
             const isFullShield = mainShieldActive && subShieldActive;
@@ -836,26 +929,52 @@ function startSimulation() {
             // Normal Hit checks shield block direction (Gimlet is blocked only by Full Shield!)
             const isBlocked = this.isBlockingAngle(attackerId);
             const isGimlet = bulletType === 'gimlet';
+            const isRaygustShield = this.isRaygustShieldActive;
 
-            if (isBlocked && (!isGimlet || isFullShield)) {
-                if (isFullShield) {
-                    // Full Shield holds! Only drain 8% of the damage as Trion cost
-                    this.trion -= amount * 0.08;
-                    window.audio.playShieldBlock();
-                    // Golden sparks for Full Shield
-                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ffd700', 16);
-                    if (isGimlet) {
-                        addLog("[TACTICAL] Full Shield successfully blocked Gimlet!", "system");
+            if (isBlocked && (!isGimlet || isFullShield || isRaygustShield)) {
+                if (isRaygustShield) {
+                    this.raygustDurability -= amount;
+                    if (this.raygustDurability <= 0) {
+                        this.raygustDurability = 0;
+                        this.raygustShieldCooldown = 180; // 3 seconds at 60fps
+                        this.raygustMode = 'blade';
+                        this.isRaygustShieldActive = false;
+
+                        window.audio.playShieldBlock();
+                        if (window.audio.playExplosion) {
+                            window.audio.playShieldBlock();
+                        }
+                        spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ff3b30', 25);
+                        addLog("[TACTICAL] Your Raygust Shield has been SHATTERED! Switched to Blade Mode (3s cooldown).", "kill");
+                    } else {
+                        this.trion -= amount * 0.15;
+                        window.audio.playShieldBlock();
+                        spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#00ff14', 14);
                     }
-                } else {
-                    // Standard Shield holds! Completely block damage to Trion HP body, charge 25% Trion cost
-                    this.trion -= amount * 0.25;
-                    window.audio.playShieldBlock();
-                    // Green sparks for standard Shield
-                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#39ff14', 12);
+                    return;
                 }
-                if (this.trion <= 0) {
-                    this.trion = 0;
+
+                // Shield holds! Reduce durability
+                this.shieldDurability -= amount;
+
+                if (this.shieldDurability <= 0) {
+                    // Shield shatters!
+                    this.shieldDurability = 0;
+                    this.shieldCooldown = 180; // 3 seconds at 60fps
+                    this.wasShieldActive = false;
+
+                    // Play shatter sound and extra sparks/effects
+                    window.audio.playShieldBlock();
+                    if (window.audio.playExplosion) {
+                        window.audio.playShieldBlock();
+                    }
+                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ff3b30', 25);
+                    addLog("[TACTICAL] Your Shield has been SHATTERED! Entering 3s cooldown.", "kill");
+                } else {
+                    // Shield survived the hit
+                    window.audio.playShieldBlock();
+                    const sparkColor = isFullShield ? '#ffd700' : '#39ff14';
+                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, sparkColor, isFullShield ? 16 : 12);
                 }
                 return;
             }
@@ -893,9 +1012,7 @@ function startSimulation() {
                 this.bodyHp = 0;
                 triggerBailOut('player', 'Trion Body Destroyed');
             }
-        },
-
-        isBlockingAngle(attackerId) {
+        }, isBlockingAngle(attackerId) {
             if (this.trion <= 0) return false;
             const hasShieldMain = this.briefcase.main[this.activeMainIndex] === 'Shield';
             const hasShieldSub = this.briefcase.sub[this.activeSubIndex] === 'Shield';
@@ -903,31 +1020,36 @@ function startSimulation() {
 
             let mainShield = false;
             let subShield = false;
-
             if (bothAreShield) {
-                const eitherPressed = isLeftMouseDown || isRightMouseDown;
-                mainShield = !this.isChameleonActive && eitherPressed;
-                subShield = !this.isChameleonActive && eitherPressed;
+                const pressed = isLeftMouseDown || isRightMouseDown;
+                mainShield = !this.isChameleonActive && pressed && this.shieldCooldown <= 0;
+                subShield = !this.isChameleonActive && pressed && this.shieldCooldown <= 0;
             } else {
-                mainShield = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown);
-                subShield = !this.isChameleonActive && (hasShieldSub && isRightMouseDown);
+                mainShield = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.shieldCooldown <= 0;
+                subShield = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.shieldCooldown <= 0;
             }
 
-            if (!mainShield && !subShield) return false;
+            const isRaygustShield = this.isRaygustShieldActive;
 
-            // Find attacker
-            const attacker = allAgents.find(a => a.id === attackerId);
+            if (!mainShield && !subShield && !isRaygustShield) return false;
+
+            const attacker = window.allAgents.find(a => a.id === attackerId);
             if (!attacker) return false;
 
             const attackAngle = Math.atan2(attacker.y - this.y, attacker.x - this.x);
-            let angleDiff = attackAngle - this.angle;
-            // Normalize
-            angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+            let diff = attackAngle - this.angle;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
 
-            // Full Shield provides a complete 360-degree coverage!
-            const currentShieldAngle = (mainShield && subShield) ? 360 : 90;
-            const shieldRad = (currentShieldAngle * Math.PI) / 360; // half angle bounds
-            return Math.abs(angleDiff) <= shieldRad;
+            let currentShieldAngle = 90;
+            if (isRaygustShield) {
+                currentShieldAngle = 120; // Raygust Shield Mode covers 120 degrees arc!
+            } else if (mainShield && subShield) {
+                currentShieldAngle = this.shieldAngleFull;
+            } else {
+                currentShieldAngle = this.shieldAngleStandard;
+            }
+            const shieldRad = (currentShieldAngle * Math.PI) / 360;
+            return Math.abs(diff) <= shieldRad;
         }
     };
 
@@ -1002,7 +1124,8 @@ function startSimulation() {
     // Initialize starting active slots for player to the first slots
     player.activeMainIndex = 0;
     player.activeSubIndex = 0;
-    player.isBagwormActive = (player.briefcase.main[0] === 'Bagworm' || player.briefcase.sub[0] === 'Bagworm');
+    // Bagworm is forced OFF during countdown so player can see all positions on radar
+    player.isBagwormActive = false;
 
     // Clear vectors
     bullets.length = 0;
@@ -1030,20 +1153,8 @@ function startSimulation() {
             ai.x = aiSpawn.x;
             ai.y = aiSpawn.y;
 
-            // Activate initial Bagworm on AI if equipped (with 65% chance so not all enemies start with it active)
-            let aiBgwMainIdx = ai.briefcase.main.indexOf('Bagworm');
-            let aiBgwSubIdx = ai.briefcase.sub.indexOf('Bagworm');
-            if ((aiBgwMainIdx !== -1 || aiBgwSubIdx !== -1) && Math.random() < 0.65) {
-                if (aiBgwMainIdx !== -1) {
-                    ai.activeMain = aiBgwMainIdx;
-                    ai.isBagwormActive = true;
-                } else if (aiBgwSubIdx !== -1) {
-                    ai.activeSub = aiBgwSubIdx;
-                    ai.isBagwormActive = true;
-                }
-            } else {
-                ai.isBagwormActive = false;
-            }
+            // Bagworm is forced OFF during countdown so player can assess positions
+            ai.isBagwormActive = false;
 
             allAgents.push(ai);
         });
@@ -1070,10 +1181,312 @@ function startSimulation() {
     // Launch pre-match countdown
     startCountdown(() => {
         matchActive = true;
+
+        // Re-activate Bagworm for all agents now that countdown is over
+        activateBagwormOnMatchStart();
+
         addLog("[SYSTEM] Rank Wars Match Commenced! Deploying triggers...", 'system');
         requestAnimationFrame(gameLoop);
     });
 }
+
+/* ==========================================================================
+   VIRTUAL TRAINING SANDBOX MECHANICS
+   ========================================================================== */
+
+function startTrainingSimulation() {
+    // 1. Hide Lobby Screen, Show Arena HUD
+    document.getElementById('lobby-screen').classList.remove('active');
+    document.getElementById('game-screen').classList.add('active');
+
+    // 2. Set Up Sandbox Map (training_sandbox, 1600x1200)
+    arena.init('training_sandbox', 1600, 1200);
+    document.getElementById('hud-map-name').textContent = "Virtual Training Sandbox";
+
+    // 3. Spawns Player Object
+    player = {
+        id: 'player',
+        name: (agentPresets[selectedAgent] && agentPresets[selectedAgent].name) || 'Custom Agent',
+        x: 200,
+        y: 200,
+        vx: 0,
+        vy: 0,
+        radius: 18,
+        angle: 0,
+        speed: (agentPresets[selectedAgent] ? agentPresets[selectedAgent].speed : 3.5),
+        trionMax: (agentPresets[selectedAgent] ? agentPresets[selectedAgent].trion * 100 : 900) * trionBoostFactor,
+        trion: 0,
+        bodyHpMax: 1000 * hpBoostFactor,
+        bodyHp: 1000 * hpBoostFactor,
+        isLeaking: false,
+        leakRate: 0,
+        isWeighted: false,
+        weightStacks: 0,
+        isDashing: false,
+        dashTimer: 0,
+        stunTimer: 0,
+        compositeChargeTimer: 0,
+        compositeSilenceTimer: 0,
+        compositeFusionType: null,
+
+        briefcase: {
+            main: [...activeBriefcase.main],
+            sub: [...activeBriefcase.sub]
+        },
+        activeMainIndex: 0,
+        activeSubIndex: 0,
+        shieldAngleStandard: 90,
+        shieldAngleFull: 360,
+        shieldDurability: 500,
+        shieldDurabilityMax: 500,
+        shieldCooldown: 0,
+        wasShieldActive: false,
+        isRaygustShieldActive: false,
+        raygustMode: 'blade',
+        raygustDurability: 600,
+        raygustDurabilityMax: 600,
+        raygustShieldCooldown: 0,
+        wasRaygustShieldActive: false,
+        isBagwormActive: false,
+        isChameleonActive: false,
+        bailedOut: false,
+        cooldowns: { main: 0, sub: 0 },
+
+        takeDamage(amount, attackerId, isLeadBullet = false, bulletType = '') {
+            if (this.bodyHp <= 0) return;
+            // Clamped damage to keep player alive in training sandbox
+            this.bodyHp = Math.max(1, this.bodyHp - amount);
+        },
+
+        isBlockingAngle(attackerId) {
+            if (this.trion <= 0) return false;
+            const hasShieldMain = this.briefcase.main[this.activeMainIndex] === 'Shield';
+            const hasShieldSub = this.briefcase.sub[this.activeSubIndex] === 'Shield';
+            const bothAreShield = hasShieldMain && hasShieldSub;
+
+            let mainShield = false;
+            let subShield = false;
+            if (bothAreShield) {
+                const pressed = isLeftMouseDown || isRightMouseDown;
+                mainShield = !this.isChameleonActive && pressed && this.shieldCooldown <= 0;
+                subShield = !this.isChameleonActive && pressed && this.shieldCooldown <= 0;
+            } else {
+                mainShield = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.shieldCooldown <= 0;
+                subShield = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.shieldCooldown <= 0;
+            }
+
+            const isRaygustShield = this.isRaygustShieldActive;
+            if (!mainShield && !subShield && !isRaygustShield) return false;
+
+            const attacker = window.allAgents.find(a => a.id === attackerId);
+            if (!attacker) return false;
+
+            const attackAngle = Math.atan2(attacker.y - this.y, attacker.x - this.x);
+            let diff = attackAngle - this.angle;
+            diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+
+            let currentShieldAngle = 90;
+            if (isRaygustShield) {
+                currentShieldAngle = 120;
+            } else if (mainShield && subShield) {
+                currentShieldAngle = this.shieldAngleFull;
+            } else {
+                currentShieldAngle = this.shieldAngleStandard;
+            }
+            const shieldRad = (currentShieldAngle * Math.PI) / 360;
+            return Math.abs(diff) <= shieldRad;
+        }
+    };
+
+    player.trion = player.trionMax;
+
+    // Clear and populate allAgents with only the Player
+    allAgents.length = 0;
+    allAgents.push(player);
+
+    bullets.length = 0;
+    grPads.length = 0;
+    particles.length = 0;
+
+    // Reset score board HUD display
+    document.getElementById('player-score').textContent = "0";
+    document.getElementById('score-list').innerHTML = `
+        <div class="score-row active">
+            <span class="rank">1</span>
+            <span class="name">${player.name}</span>
+            <span class="score">0 Pts</span>
+        </div>
+    `;
+
+    // 4. Show Training HUD button
+    const hudBtn = document.getElementById('training-hud-btn');
+    if (hudBtn) {
+        hudBtn.style.display = 'block';
+    }
+
+    updateHUDSlotLabels();
+    updateTrainingSwitcherHighlights();
+
+    // Hide aggression slider initially
+    const sliderGroup = document.getElementById('combat-aggression-group');
+    if (sliderGroup) sliderGroup.style.display = 'none';
+
+    // 5. Commences Loop
+    matchActive = true;
+    addLog("[SYSTEM] Virtual Training Sandbox initiated! Trigger Switcher deployed.", 'system');
+    requestAnimationFrame(gameLoop);
+}
+
+// Summon targets
+window.spawnTrainingDummy = function (type) {
+    if (window.gameMode !== 'training') return;
+
+    const id = 'dummy_' + Date.now();
+    let name = "Static Dummy";
+    let preset = 'osamu';
+
+    if (type === 'shield') {
+        name = "Shield Dummy";
+        preset = 'murakami';
+    } else if (type === 'combat') {
+        name = "Combat Trainer";
+        preset = 'yuma';
+    }
+
+    const dummy = new AIAgent(id, name, preset, 'medium', 2, '#ff5722');
+    dummy.isTrainingDummy = true;
+    dummy.dummyType = type;
+
+    // Spawn in front of the player
+    dummy.x = player.x + Math.cos(player.angle) * 200;
+    dummy.y = player.y + Math.sin(player.angle) * 200;
+
+    // Boundary clamp
+    dummy.x = Math.max(80, Math.min(arena.width - 80, dummy.x));
+    dummy.y = Math.max(80, Math.min(arena.height - 80, dummy.y));
+
+    allAgents.push(dummy);
+    addLog(`[SYSTEM] Summoned ${name} into the training arena!`, 'system');
+
+    updateTrainingUIControls();
+};
+
+window.clearAllTrainingBots = function () {
+    for (let i = allAgents.length - 1; i >= 0; i--) {
+        if (allAgents[i].isTrainingDummy) {
+            allAgents.splice(i, 1);
+        }
+    }
+    addLog("[SYSTEM] Despawned all training bot targets.", "system");
+    updateTrainingUIControls();
+};
+
+window.updateTrainingUIControls = function () {
+    const hasCombatTrainer = allAgents.some(a => a.isTrainingDummy && a.dummyType === 'combat');
+    const sliderGroup = document.getElementById('combat-aggression-group');
+    if (sliderGroup) {
+        sliderGroup.style.display = hasCombatTrainer ? 'block' : 'none';
+    }
+};
+
+window.switchTrainingTrigger = function (hand, triggerName) {
+    if (!player || window.gameMode !== 'training') return;
+
+    if (hand === 'main') {
+        player.briefcase.main[player.activeMainIndex] = triggerName;
+        addLog(`[SYSTEM] Instantly equipped ${triggerName} in Main hand active slot!`, 'system');
+    } else {
+        player.briefcase.sub[player.activeSubIndex] = triggerName;
+        addLog(`[SYSTEM] Instantly equipped ${triggerName} in Sub hand active slot!`, 'system');
+    }
+
+    if (window.updateHUDSlotLabels) {
+        window.updateHUDSlotLabels();
+    }
+
+    updateTrainingSwitcherHighlights();
+};
+
+window.updateTrainingSwitcherHighlights = function () {
+    if (!player || window.gameMode !== 'training') return;
+
+    const activeMain = player.briefcase.main[player.activeMainIndex];
+    const activeSub = player.briefcase.sub[player.activeSubIndex];
+
+    const mainBtns = document.querySelectorAll('#training-main-slots .training-slot-btn');
+    mainBtns.forEach(btn => {
+        const trig = btn.getAttribute('data-trigger') || btn.textContent.trim();
+        if (trig === activeMain) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    const subBtns = document.querySelectorAll('#training-sub-slots .training-slot-btn');
+    subBtns.forEach(btn => {
+        const trig = btn.getAttribute('data-trigger') || btn.textContent.trim();
+        if (trig === activeSub) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+};
+
+window.updateAggressionLevel = function (val) {
+    const numericVal = parseInt(val, 10);
+    window.trainingAggression = numericVal;
+
+    const labels = ["IDLE", "WALK", "ATTACK", "WARS"];
+    const labelEl = document.getElementById('aggression-label');
+    if (labelEl) {
+        labelEl.textContent = labels[numericVal];
+    }
+
+    allAgents.forEach(agent => {
+        if (agent.isTrainingDummy && agent.dummyType === 'combat') {
+            if (numericVal === 0) {
+                agent.vx = 0;
+                agent.vy = 0;
+                agent.state = 'patrol';
+                agent.targetAgent = null;
+            }
+        }
+    });
+
+    addLog(`[SYSTEM] Combat Trainer aggression set to ${labels[numericVal]}!`, 'system');
+};
+
+window.trainingRefillTrion = function () {
+    if (!player || window.gameMode !== 'training') return;
+    player.trion = player.trionMax;
+    addLog("[SYSTEM] ⚡ Trion reserves instantly refilled to maximum!", 'system');
+};
+
+window.trainingRefillHP = function () {
+    if (!player || window.gameMode !== 'training') return;
+    player.bodyHp = player.bodyHpMax;
+    player.isLeaking = false;
+    player.leakRate = 0;
+    addLog("[SYSTEM] ❤️ Trion Body HP instantly restored to full!", 'system');
+};
+
+window.spawnFloatingText = function (text, x, y, color = '#ffffff') {
+    if (window.gameMode === 'training') return;
+    particles.push({
+        type: 'text',
+        text: text,
+        x: x,
+        y: y,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -0.9 - Math.random() * 0.5,
+        color: color,
+        shadowColor: color === '#ffffff' ? '#000000' : color,
+        life: 55,
+        maxLife: 55
+    });
+};
 
 function updateHUDSlotLabels() {
     const mainCards = document.querySelectorAll('#hud-main-slots .hud-slot-card');
@@ -1117,6 +1530,7 @@ function gameLoop() {
 
     updateProjectilesAndInteractives();
     updateAIAgents();
+    resolveAgentCollisions();
     updateParticles();
     arena.updateDebris();
 
@@ -1127,7 +1541,9 @@ function gameLoop() {
     renderScoreLeaderboard();
 
     // Check match completion
-    if (window.gameMode === 'squad') {
+    if (window.gameMode === 'training') {
+        // Infinite sandbox: do not trigger match completion win/loss rules
+    } else if (window.gameMode === 'squad') {
         const teamsWithSurvivors = new Set();
         allAgents.forEach(a => {
             if (!a.bailedOut && a.teamId) {
@@ -1151,7 +1567,8 @@ function gameLoop() {
         }
     } else {
         const aliveAgents = allAgents.filter(a => !a.bailedOut);
-        if (gameTime <= 0 || player.bailedOut || aliveAgents.length <= 1) {
+        const shouldEnd = window.gameMode !== 'training' && (gameTime <= 0 || player.bailedOut || aliveAgents.length <= 1);
+        if (shouldEnd) {
             endSimulationMatch();
             return;
         }
@@ -1161,6 +1578,10 @@ function gameLoop() {
 }
 
 function updateTimer() {
+    if (window.gameMode === 'training') {
+        document.getElementById('game-timer').textContent = "∞";
+        return;
+    }
     gameTime--;
     const totalSecs = Math.ceil(gameTime / 60);
     const m = Math.floor(totalSecs / 60).toString().padStart(2, '0');
@@ -1170,9 +1591,19 @@ function updateTimer() {
 function updatePlayerInputPhysics() {
     if (player.bailedOut) return;
 
+    if (window.gameMode === 'training') {
+        player.trion = Math.min(player.trionMax, player.trion + 0.35);
+        player.bodyHp = Math.min(player.bodyHpMax, player.bodyHp + 0.5);
+        player.isLeaking = false;
+    }
+
     // Decrement trigger cooldowns
     if (player.cooldowns.main > 0) player.cooldowns.main -= 16.67;
     if (player.cooldowns.sub > 0) player.cooldowns.sub -= 16.67;
+
+    // Decrement shield cooldown
+    if (player.shieldCooldown > 0) player.shieldCooldown--;
+    if (player.raygustShieldCooldown > 0) player.raygustShieldCooldown--;
 
     // Decrement composite silence timer
     if (player.compositeSilenceTimer && player.compositeSilenceTimer > 0) {
@@ -1216,17 +1647,50 @@ function updatePlayerInputPhysics() {
     player.isBagwormActive = (player.briefcase.main[player.activeMainIndex] === 'Bagworm' || player.briefcase.sub[player.activeSubIndex] === 'Bagworm');
     player.isChameleonActive = (player.briefcase.main[player.activeMainIndex] === 'Chameleon' || player.briefcase.sub[player.activeSubIndex] === 'Chameleon');
 
+    // Active Raygust Shield Mode check
+    const hasRaygustMain = player.briefcase.main[player.activeMainIndex] === 'Raygust';
+    const hasRaygustSub = player.briefcase.sub[player.activeSubIndex] === 'Raygust';
+    player.isRaygustShieldActive = !player.isChameleonActive && player.trion > 0 && player.raygustShieldCooldown <= 0 && player.raygustMode === 'shield' && (
+        (hasRaygustMain && isLeftMouseDown) || (hasRaygustSub && isRightMouseDown)
+    );
+
     if (player.isBagwormActive) player.trion -= 0.3;
     if (player.isChameleonActive) player.trion -= 0.8;
+    if (player.isRaygustShieldActive) player.trion -= 0.5;
 
     // Active Shield passive drain
-    const mainShieldActive = !player.isChameleonActive && (player.briefcase.main[player.activeMainIndex] === 'Shield' && isLeftMouseDown) && player.trion > 0;
-    const subShieldActive = !player.isChameleonActive && (player.briefcase.sub[player.activeSubIndex] === 'Shield' && isRightMouseDown) && player.trion > 0;
+    const mainShieldActive = !player.isChameleonActive && (player.briefcase.main[player.activeMainIndex] === 'Shield' && isLeftMouseDown) && player.trion > 0 && player.shieldCooldown <= 0;
+    const subShieldActive = !player.isChameleonActive && (player.briefcase.sub[player.activeSubIndex] === 'Shield' && isRightMouseDown) && player.trion > 0 && player.shieldCooldown <= 0;
     if (mainShieldActive && subShieldActive) {
         player.trion -= 1.0; // Passive consumption for Full Shield
     } else if (mainShieldActive || subShieldActive) {
         player.trion -= 0.5; // Passive consumption for Standard Shield
     }
+
+    const shieldActive = mainShieldActive || subShieldActive;
+    const isFullShield = mainShieldActive && subShieldActive;
+    player.shieldDurabilityMax = isFullShield ? (900 * 360 / (player.shieldAngleFull || 360)) : (500 * 90 / (player.shieldAngleStandard || 90));
+
+    if (shieldActive) {
+        if (!player.wasShieldActive) {
+            player.shieldDurability = player.shieldDurabilityMax;
+        }
+        player.shieldDurability = Math.min(player.shieldDurability, player.shieldDurabilityMax);
+    } else {
+        player.shieldDurability = 0;
+    }
+    player.wasShieldActive = shieldActive;
+
+    // Update Raygust Shield Durability
+    if (player.isRaygustShieldActive) {
+        if (!player.wasRaygustShieldActive) {
+            player.raygustDurability = player.raygustDurabilityMax;
+        }
+        player.raygustDurability = Math.min(player.raygustDurability, player.raygustDurabilityMax);
+    } else {
+        player.raygustDurability = 0;
+    }
+    player.wasRaygustShieldActive = player.isRaygustShieldActive;
 
     if (player.isLeaking) {
         player.bodyHp -= player.leakRate / 60;
@@ -1283,6 +1747,10 @@ function updatePlayerInputPhysics() {
         currentSpeed *= 0.60; // 40% speed penalty for Full Shield
     } else if (mainShield || subShield) {
         currentSpeed *= 0.80; // 20% speed penalty for Standard Shield
+    }
+
+    if (player.isRaygustShieldActive) {
+        currentSpeed *= 0.50; // 50% speed penalty for heavy Raygust Shield
     }
 
     if (inEnemySpider) {
@@ -1380,6 +1848,8 @@ function executeTriggerAction(side) {
 
     if (trigName === "Empty" || trigName === "Bagworm" || trigName === "Chameleon" || trigName === "Shield" || trigName === "Lead Bullet") return;
 
+    if (trigName === "Raygust" && player.raygustMode === "shield") return;
+
     const config = window.TRIGGER_CATALOG[trigName];
     if (!config) return;
 
@@ -1390,6 +1860,7 @@ function executeTriggerAction(side) {
     }
 
     player.trion -= config.trionCost;
+    // (Training trion cost indicator removed per user request)
     const cooldownRef = isMain ? 'main' : 'sub';
 
     // ⚔️ ATTACKER TRIGGERS
@@ -1448,10 +1919,40 @@ function executeTriggerAction(side) {
             player.vx = Math.cos(player.angle) * dashSpeed;
             player.vy = Math.sin(player.angle) * dashSpeed;
             player.isDashing = true;
-            player.dashTimer = 12; // 12 frames lock movement
             player.isWeighted = false; // remove speed debuffs during launch!
             spawnSparks(player.x - Math.cos(player.angle) * 15, player.y - Math.sin(player.angle) * 15, '#00f0ff', 20);
             player.cooldowns[cooldownRef] = config.cooldown;
+
+            if (player.raygustMode === 'blade') {
+                player.dashTimer = 12; // 12 frames lock movement
+
+                // Blade mode: deals 200 damage to any enemy within 150px and within 60 degrees of front facing angle
+                allAgents.forEach(agent => {
+                    if (agent.id === 'player' || agent.bailedOut) return;
+
+                    const dx = agent.x - player.x;
+                    const dy = agent.y - player.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist <= 150 + agent.radius) {
+                        const targetAngle = Math.atan2(dy, dx);
+                        let angleDiff = targetAngle - player.angle;
+                        angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+
+                        const arcSweep = (120 * Math.PI) / 180;
+                        if (Math.abs(angleDiff) <= arcSweep / 2) {
+                            agent.takeDamage(200, 'player', false);
+                            spawnSparks(agent.x, agent.y, '#00ff14', 16);
+                            if (window.audio.playSlash) {
+                                window.audio.playSlash(true);
+                            }
+                            addLog(`[TACTICAL] Thruster Dash-Slash hit AI ${agent.name} for 200 damage!`, 'system');
+                        }
+                    }
+                });
+            } else if (player.raygustMode === 'shield') {
+                player.dashTimer = 16; // Extend dash duration to 16 frames for heavier feel
+                addLog(`[TACTICAL] Thruster Shield Bash charge activated!`, 'system');
+            }
         }
     }
 
@@ -1492,8 +1993,8 @@ function executeTriggerAction(side) {
         }
 
         if (bulletType === 'viper') {
-            // Left click drag activates Viper drawing path
-            if (side === 'main' && isLeftMouseDown) {
+            // Left/Right click drag activates Viper drawing path
+            if ((side === 'main' && isLeftMouseDown) || (side === 'sub' && isRightMouseDown)) {
                 player.trion += config.trionCost; // Refund continuous drag costs
                 return;
             }
@@ -2157,7 +2658,7 @@ function executeCompositeFusion() {
     if (leftTrig === 'Asteroid' && rightTrig === 'Asteroid') {
         fusionType = 'gimlet';
         trionCost = 60;
-    } else if ((leftTrig === 'Asteroid' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Asteroid')) {
+    } else if ((leftTrig === 'Viper' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Viper')) {
         fusionType = 'tomahawk';
         trionCost = 100;
     } else if ((leftTrig === 'Hound' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Hound')) {
@@ -2172,7 +2673,7 @@ function executeCompositeFusion() {
     }
 
     if (!fusionType) {
-        addLog("[WARNING] No valid composite fusion combination equipped/selected! Combinations: Asteroid+Asteroid (Gimlet), Asteroid+Meteora (Tomahawk), Hound+Meteora (Salamander), Asteroid+Viper (Cobra), Hound+Hound (Hornet)", "system");
+        addLog("[WARNING] No valid composite fusion combination equipped/selected! Combinations: Asteroid+Asteroid (Gimlet), Viper+Meteora (Tomahawk), Hound+Meteora (Salamander), Asteroid+Viper (Cobra), Hound+Hound (Hornet)", "system");
         return;
     }
 
@@ -2183,9 +2684,10 @@ function executeCompositeFusion() {
 
     // Spend Trion
     player.trion -= trionCost;
+    // (Training trion cost indicator removed per user request)
 
     // Enter charging phase!
-    player.compositeChargeTimer = 1800; // 1.8 seconds at 60fps (16.67ms increments)
+    player.compositeChargeTimer = 1300; // 1.3 seconds
     player.compositeFusionType = fusionType;
 
     // Deactivate active shields
@@ -2373,6 +2875,74 @@ function updateProjectilesAndInteractives() {
                 // Trigger small alert log once
                 if (Math.random() > 0.985) {
                     addLog(`[TACTICAL] Spider Wire tripped, slowing ${agent.name}!`, 'system');
+                }
+            }
+        }
+    }
+}
+
+function resolveAgentCollisions() {
+    if (!arena) return;
+
+    // Filter agents who haven't bailed out
+    const activeAgents = allAgents.filter(agent => !agent.bailedOut);
+
+    // Run multiple passes for multi-agent pushing stability (2 passes is standard and very performant)
+    for (let pass = 0; pass < 2; pass++) {
+        for (let i = 0; i < activeAgents.length; i++) {
+            const a = activeAgents[i];
+            for (let j = i + 1; j < activeAgents.length; j++) {
+                const b = activeAgents[j];
+
+                let dx = b.x - a.x;
+                let dy = b.y - a.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                const minDist = a.radius + b.radius;
+
+                if (dist < minDist) {
+                    // Avoid division by zero if they are perfectly stacked
+                    if (dist === 0) {
+                        dx = Math.random() - 0.5;
+                        dy = Math.random() - 0.5;
+                        dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    }
+
+                    const overlap = minDist - dist;
+                    // Move them away from each other by half the overlap each
+                    const pushX = (dx / dist) * overlap * 0.5;
+                    const pushY = (dy / dist) * overlap * 0.5;
+
+                    a.x -= pushX;
+                    a.y -= pushY;
+                    b.x += pushX;
+                    b.y += pushY;
+
+                    // Check if Thruster Shield Bash is active
+                    if (a.id === 'player' && a.isDashing && a.raygustMode === 'shield') {
+                        b.vx = Math.cos(a.angle) * 18;
+                        b.vy = Math.sin(a.angle) * 18;
+                        b.stunTimer = 20;
+                        spawnSparks(b.x, b.y, '#00f0ff', 25);
+                        addLog(`[TACTICAL] Thruster Shield Bash knocked back and stunned AI ${b.name}!`, 'system');
+                    } else if (b.id === 'player' && b.isDashing && b.raygustMode === 'shield') {
+                        a.vx = Math.cos(b.angle) * 18;
+                        a.vy = Math.sin(b.angle) * 18;
+                        a.stunTimer = 20;
+                        spawnSparks(a.x, a.y, '#00f0ff', 25);
+                        addLog(`[TACTICAL] Thruster Shield Bash knocked back and stunned AI ${a.name}!`, 'system');
+                    }
+
+                    // Resolve wall collision right after pushing to prevent getting pushed into walls
+                    const colA = arena.circleCollides(a.x, a.y, a.radius);
+                    if (colA.collided) {
+                        a.x = colA.x;
+                        a.y = colA.y;
+                    }
+                    const colB = arena.circleCollides(b.x, b.y, b.radius);
+                    if (colB.collided) {
+                        b.x = colB.x;
+                        b.y = colB.y;
+                    }
                 }
             }
         }
@@ -2719,11 +3289,11 @@ function drawPlayerCharacter() {
 
     if (bothAreShield) {
         const eitherPressed = isLeftMouseDown || isRightMouseDown;
-        mainShieldActiveDraw = !player.isChameleonActive && eitherPressed && player.trion > 0;
-        subShieldActiveDraw = !player.isChameleonActive && eitherPressed && player.trion > 0;
+        mainShieldActiveDraw = !player.isChameleonActive && eitherPressed && player.trion > 0 && player.shieldCooldown <= 0;
+        subShieldActiveDraw = !player.isChameleonActive && eitherPressed && player.trion > 0 && player.shieldCooldown <= 0;
     } else {
-        mainShieldActiveDraw = !player.isChameleonActive && (hasShieldMain && isLeftMouseDown) && player.trion > 0;
-        subShieldActiveDraw = !player.isChameleonActive && (hasShieldSub && isRightMouseDown) && player.trion > 0;
+        mainShieldActiveDraw = !player.isChameleonActive && (hasShieldMain && isLeftMouseDown) && player.trion > 0 && player.shieldCooldown <= 0;
+        subShieldActiveDraw = !player.isChameleonActive && (hasShieldSub && isRightMouseDown) && player.trion > 0 && player.shieldCooldown <= 0;
     }
 
     if (player.compositeChargeTimer && player.compositeChargeTimer > 0) {
@@ -2734,13 +3304,43 @@ function drawPlayerCharacter() {
     if (mainShieldActiveDraw || subShieldActiveDraw) {
         ctx.save();
         const isFull = mainShieldActiveDraw && subShieldActiveDraw;
-        ctx.strokeStyle = 'rgba(57, 255, 20, 0.85)';
+
+        // Dynamically fade color based on durability percentage
+        const durPct = (player.shieldDurability || 0) / (player.shieldDurabilityMax || 1);
+        let r, g, b;
+        if (durPct > 0.5) {
+            const p = (durPct - 0.5) * 2;
+            r = Math.floor(255 - p * (255 - 57));
+            g = Math.floor(255 - p * (255 - 255));
+            b = Math.floor(0 + p * 20);
+        } else {
+            const p = durPct * 2;
+            r = Math.floor(255);
+            g = Math.floor(p * 255);
+            b = 0;
+        }
+
+        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.85)`;
         ctx.lineWidth = 5;
         ctx.shadowBlur = 10;
-        ctx.shadowColor = '#39ff14';
+        ctx.shadowColor = `rgb(${r}, ${g}, ${b})`;
 
-        const currentShieldAngle = isFull ? 360 : 90;
+        const currentShieldAngle = isFull ? (player.shieldAngleFull || 360) : (player.shieldAngleStandard || 90);
         const shieldRad = (currentShieldAngle * Math.PI) / 360; // half angle bounds
+        ctx.beginPath();
+        ctx.arc(0, 0, player.radius + 8, -shieldRad, shieldRad);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Draw active Raygust heavy Shield arc
+    if (player.isRaygustShieldActive) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0, 255, 20, 0.85)';
+        ctx.lineWidth = 6;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = '#00ff14';
+        const shieldRad = (120 * Math.PI) / 360; // 120-degree arc
         ctx.beginPath();
         ctx.arc(0, 0, player.radius + 8, -shieldRad, shieldRad);
         ctx.stroke();
@@ -2852,6 +3452,19 @@ function drawPlayerCharacter() {
         ctx.lineWidth = 0.5;
         ctx.strokeRect(barX, barY2, barWidth, barHeight);
 
+        // Shield Durability Bar (Yellow-Orange, only if active)
+        if (player.shieldDurability > 0) {
+            const barY3 = player.y - 43;
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.fillRect(barX, barY3, barWidth, barHeight);
+            const shieldFillWidth = Math.max(0, Math.min(1, player.shieldDurability / player.shieldDurabilityMax)) * barWidth;
+            ctx.fillStyle = '#ffdf00'; // Shield Yellow
+            ctx.fillRect(barX, barY3, shieldFillWidth, barHeight);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 0.5;
+            ctx.strokeRect(barX, barY3, barWidth, barHeight);
+        }
+
         ctx.restore();
     }
 }
@@ -2926,6 +3539,16 @@ function renderParticles() {
             ctx.arc(p.x, p.y, p.maxRadius * pct, 0, Math.PI * 2);
             ctx.stroke();
             ctx.restore();
+        }
+        else if (p.type === 'text') {
+            ctx.fillStyle = p.color;
+            ctx.font = "900 13px 'Orbitron', sans-serif";
+            ctx.textAlign = 'center';
+            ctx.shadowBlur = 6;
+            ctx.shadowColor = p.shadowColor || '#000000';
+            ctx.fillText(p.text, p.x, p.y);
+            p.x += p.vx;
+            p.y += p.vy;
         }
     }
     ctx.restore();
@@ -3106,9 +3729,24 @@ function renderTacticalRadar() {
 
         radarCtx.save();
 
+        // Determine dot color
+        let color = '#ff3b30'; // Default enemy red
+        if (window.gameMode === 'squad') {
+            const teamColors = {
+                1: '#00f0ff',
+                2: '#ff5722',
+                3: '#bd00ff'
+            };
+            color = teamColors[agent.teamId] || '#ff3b30';
+        } else {
+            if (agent.id === 'player' || isAlly) {
+                color = '#00f0ff';
+            }
+        }
+
         if (agent.id === 'player') {
             if (player.isBagwormActive || player.isChameleonActive) {
-                // Cloaked player: draw as faint, pulsing cyan outline circle for self-navigation feedback
+                // Cloaked player: draw as faint, pulsing cyan outline circle with white core for self-navigation feedback
                 radarCtx.fillStyle = 'rgba(0, 240, 255, 0.12)';
                 radarCtx.strokeStyle = 'rgba(0, 240, 255, 0.55)';
                 radarCtx.lineWidth = 1;
@@ -3116,31 +3754,42 @@ function renderTacticalRadar() {
                 radarCtx.shadowBlur = 3;
                 radarCtx.shadowColor = '#00f0ff';
                 radarCtx.beginPath();
-                radarCtx.arc(tx, ty, 5, 0, Math.PI * 2);
+                radarCtx.arc(tx, ty, 6, 0, Math.PI * 2);
                 radarCtx.fill();
                 radarCtx.stroke();
-            } else {
-                // Active visible player: bright cyber-cyan dot
-                radarCtx.fillStyle = '#00f0ff';
-                radarCtx.shadowBlur = 10;
-                radarCtx.shadowColor = '#00f0ff';
+
+                // Faint white core
+                radarCtx.fillStyle = 'rgba(255, 255, 255, 0.6)';
                 radarCtx.beginPath();
-                radarCtx.arc(tx, ty, 4.5, 0, Math.PI * 2);
+                radarCtx.arc(tx, ty, 1.5, 0, Math.PI * 2);
+                radarCtx.fill();
+            } else {
+                // Active visible player: bright cyber squad color dot with distinct outer white ring and white core
+                radarCtx.fillStyle = color;
+                radarCtx.shadowBlur = 12;
+                radarCtx.shadowColor = color;
+                radarCtx.beginPath();
+                radarCtx.arc(tx, ty, 4.2, 0, Math.PI * 2); // Slightly larger radius
+                radarCtx.fill();
+
+                // Distinct thin white outer ring
+                // radarCtx.strokeStyle = '#ff0000';
+                // radarCtx.lineWidth = 1;
+                // radarCtx.beginPath();
+                // radarCtx.arc(tx, ty, 4.2, 0, Math.PI * 2);
+                // radarCtx.stroke();
+
+                // White central core dot
+                radarCtx.fillStyle = '#0026ff';
+                radarCtx.beginPath();
+                radarCtx.arc(tx, ty, 1.8, 0, Math.PI * 2);
                 radarCtx.fill();
             }
-        } else if (isAlly) {
-            // Teammate/Ally: glowing tactical cyan dot (bypasses Bagworm, shared feed)
-            radarCtx.fillStyle = '#00f0ff';
-            radarCtx.shadowBlur = 10;
-            radarCtx.shadowColor = '#00f0ff';
-            radarCtx.beginPath();
-            radarCtx.arc(tx, ty, 4.2, 0, Math.PI * 2);
-            radarCtx.fill();
         } else {
-            // Enemy Competitor: glowing tactical red dot
-            radarCtx.fillStyle = '#ff3b30';
+            // Teammate / Enemy: glowing dot of the computed squad color
+            radarCtx.fillStyle = color;
             radarCtx.shadowBlur = 10;
-            radarCtx.shadowColor = '#ff3b30';
+            radarCtx.shadowColor = color;
             radarCtx.beginPath();
             radarCtx.arc(tx, ty, 4.2, 0, Math.PI * 2);
             radarCtx.fill();
@@ -3203,9 +3852,9 @@ function renderHUDLabels() {
     } else if ((leftTrig === 'Viper' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Viper')) {
         isCompositeCompatible = true;
         descText = "Viper + Meteora = Tomahawk";
-    } else if ((leftTrig === 'Asteroid' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Asteroid')) {
+    } else if ((leftTrig === 'Hound' && rightTrig === 'Meteora') || (leftTrig === 'Meteora' && rightTrig === 'Hound')) {
         isCompositeCompatible = true;
-        descText = "Asteroid + Meteora = Salamander";
+        descText = "Hound + Meteora = Salamander";
     } else if (leftTrig === 'Hound' && rightTrig === 'Hound') {
         isCompositeCompatible = true;
         descText = "Hound + Hound = Hornet";
@@ -3251,6 +3900,44 @@ function renderHUDLabels() {
         leadPanel.classList.remove('active');
         document.getElementById('lead-desc').textContent = "Not Compatible";
     }
+
+    // Shield Cooldown overlay rendering
+    const cards = document.querySelectorAll('.hud-slot-card');
+    cards.forEach(card => {
+        const nameEl = card.querySelector('.name');
+        if (nameEl && nameEl.textContent === 'Shield') {
+            if (player.shieldCooldown > 0) {
+                const cdSec = Math.ceil(player.shieldCooldown / 60);
+                card.style.position = 'relative';
+                let cdOverlay = card.querySelector('.cd-overlay');
+                if (!cdOverlay) {
+                    cdOverlay = document.createElement('div');
+                    cdOverlay.className = 'cd-overlay';
+                    cdOverlay.style.position = 'absolute';
+                    cdOverlay.style.top = '0';
+                    cdOverlay.style.left = '0';
+                    cdOverlay.style.width = '100%';
+                    cdOverlay.style.height = '100%';
+                    cdOverlay.style.background = 'rgba(255, 0, 0, 0.4)';
+                    cdOverlay.style.display = 'flex';
+                    cdOverlay.style.alignItems = 'center';
+                    cdOverlay.style.justifyContent = 'center';
+                    cdOverlay.style.color = '#fff';
+                    cdOverlay.style.fontWeight = 'bold';
+                    cdOverlay.style.fontSize = '14px';
+                    cdOverlay.style.borderRadius = 'inherit';
+                    card.appendChild(cdOverlay);
+                }
+                cdOverlay.textContent = `${cdSec}s`;
+            } else {
+                const cdOverlay = card.querySelector('.cd-overlay');
+                if (cdOverlay) cdOverlay.remove();
+            }
+        } else {
+            const cdOverlay = card.querySelector('.cd-overlay');
+            if (cdOverlay) cdOverlay.remove();
+        }
+    });
 }
 
 function renderScoreLeaderboard() {
@@ -3417,6 +4104,10 @@ function bailoutMatch() {
     matchActive = false;
     document.getElementById('game-screen').classList.remove('active');
     document.getElementById('lobby-screen').classList.add('active');
+    const trainingHudBtn = document.getElementById('training-hud-btn');
+    if (trainingHudBtn) trainingHudBtn.style.display = 'none';
+    const trainingModal = document.getElementById('training-modal');
+    if (trainingModal) trainingModal.classList.remove('active');
 }
 
 function endSimulationMatch() {
@@ -3712,29 +4403,88 @@ document.getElementById('return-lobby-btn').addEventListener('click', () => {
     bailoutMatch();
 });
 
+function activateBagwormOnMatchStart() {
+    allAgents.forEach(agent => {
+        if (agent.id === 'player') {
+            // Force re-evaluation of player's Bagworm based on active slot triggers
+            player.isBagwormActive = (player.briefcase.main[player.activeMainIndex] === 'Bagworm' || player.briefcase.sub[player.activeSubIndex] === 'Bagworm');
+        } else {
+            // For AI agents, evaluate state immediately to trigger Bagworm activation
+            if (typeof agent.evaluateState === 'function') {
+                agent.evaluateState(allAgents);
+                // If the AI has Bagworm and prefers it, let's activate it immediately on start
+                const hasBagworm = agent.briefcase.main.includes('Bagworm') || agent.briefcase.sub.includes('Bagworm');
+                if (hasBagworm && agent.prefersBagworm) {
+                    agent.isBagwormActive = true;
+                }
+            }
+        }
+    });
+}
+
 /* ==========================================================================
    PRE-MATCH COUNTDOWN SYSTEM
    ========================================================================== */
 
 function startCountdown(onComplete) {
+    // Force all agents' Bagworms OFF during countdown so player can see positions on radar/map
+    allAgents.forEach(agent => {
+        agent.isBagwormActive = false;
+    });
+
     const overlay = document.getElementById('countdown-overlay');
     const numberEl = document.getElementById('countdown-number');
     const barFill = document.getElementById('countdown-bar-fill');
-    
+
     if (!overlay || !numberEl) {
         // Fallback: skip countdown if elements missing
         if (onComplete) onComplete();
         return;
     }
 
-    let count = 5;
-    const totalSteps = 5;
-    
+    let count = 3;
+    const totalSteps = 2;
+
     // Show overlay
     overlay.classList.add('active');
     numberEl.textContent = count;
     numberEl.className = 'countdown-number';
     barFill.style.width = '100%';
+
+    // Pre-render loop: show arena, agents, and radar during countdown
+    // so the player can assess the battlefield before the match starts
+    let countdownRenderActive = true;
+
+    // Initialize camera to center on player position
+    if (player) {
+        camera.x = player.x - camera.width / 2;
+        camera.y = player.y - camera.height / 2;
+        camera.x = Math.max(0, Math.min(camera.x, arena.width - camera.width));
+        camera.y = Math.max(0, Math.min(camera.y, arena.height - camera.height));
+    }
+
+    function countdownRenderLoop() {
+        if (!countdownRenderActive) return;
+
+        // Update camera follow on player (no physics, just camera)
+        if (player) {
+            camera.x = player.x - camera.width / 2;
+            camera.y = player.y - camera.height / 2;
+            camera.x = Math.max(0, Math.min(camera.x, arena.width - camera.width));
+            camera.y = Math.max(0, Math.min(camera.y, arena.height - camera.height));
+        }
+
+        // Render the arena canvas (map + agents visible)
+        renderArenaCanvas();
+        // Render the tactical radar (shows all positions)
+        renderTacticalRadar();
+        // Render HUD labels so player can see their loadout
+        renderHUDLabels();
+
+        requestAnimationFrame(countdownRenderLoop);
+    }
+    // Start the pre-render loop immediately
+    requestAnimationFrame(countdownRenderLoop);
 
     const countInterval = setInterval(() => {
         count--;
@@ -3756,8 +4506,9 @@ function startCountdown(onComplete) {
         } else {
             // count < 0, cleanup and start
             clearInterval(countInterval);
+            countdownRenderActive = false; // Stop pre-render loop
             overlay.classList.remove('active');
-            numberEl.textContent = '5';
+            numberEl.textContent = '3';
             numberEl.className = 'countdown-number';
             barFill.style.width = '100%';
             if (onComplete) onComplete();
@@ -3773,7 +4524,7 @@ function setupHowToPlayModal() {
     const openBtn = document.getElementById('how-to-play-btn');
     const modal = document.getElementById('how-to-play-modal');
     const closeBtn = document.getElementById('htp-close-btn');
-    
+
     if (!openBtn || !modal) return;
 
     // Open modal
@@ -4037,7 +4788,18 @@ function startSquadSimulation() {
         },
         activeMainIndex: 0,
         activeSubIndex: 0,
-        shieldAngle: 90,
+        shieldAngleStandard: 90,
+        shieldAngleFull: 360,
+        shieldDurability: 350,
+        shieldDurabilityMax: 350,
+        shieldCooldown: 0,
+        wasShieldActive: false,
+        isRaygustShieldActive: false,
+        raygustMode: 'blade', // 'blade' or 'shield'
+        raygustDurability: 600,
+        raygustDurabilityMax: 600,
+        raygustShieldCooldown: 0,
+        wasRaygustShieldActive: false,
         isBagwormActive: false,
         isChameleonActive: false,
         bailedOut: false,
@@ -4071,28 +4833,63 @@ function startSquadSimulation() {
 
             if (bothAreShield) {
                 const eitherPressed = isLeftMouseDown || isRightMouseDown;
-                mainShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
-                subShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0;
+                mainShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0 && this.shieldCooldown <= 0;
+                subShieldActive = !this.isChameleonActive && eitherPressed && this.trion > 0 && this.shieldCooldown <= 0;
             } else {
-                mainShieldActive = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.trion > 0;
-                subShieldActive = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.trion > 0;
+                mainShieldActive = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.trion > 0 && this.shieldCooldown <= 0;
+                subShieldActive = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.trion > 0 && this.shieldCooldown <= 0;
             }
 
             const isFullShield = mainShieldActive && subShieldActive;
             const isBlocked = this.isBlockingAngle(attackerId);
             const isGimlet = bulletType === 'gimlet';
+            const isRaygustShield = this.isRaygustShieldActive;
 
-            if (isBlocked && (!isGimlet || isFullShield)) {
-                if (isFullShield) {
-                    this.trion -= amount * 0.08;
-                    window.audio.playShieldBlock();
-                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ffd700', 16);
-                } else {
-                    this.trion -= amount * 0.25;
-                    window.audio.playShieldBlock();
-                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#39ff14', 12);
+            if (isBlocked && (!isGimlet || isFullShield || isRaygustShield)) {
+                if (isRaygustShield) {
+                    this.raygustDurability -= amount;
+                    if (this.raygustDurability <= 0) {
+                        this.raygustDurability = 0;
+                        this.raygustShieldCooldown = 180; // 3 seconds at 60fps
+                        this.raygustMode = 'blade';
+                        this.isRaygustShieldActive = false;
+
+                        window.audio.playShieldBlock();
+                        if (window.audio.playExplosion) {
+                            window.audio.playShieldBlock();
+                        }
+                        spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ff3b30', 25);
+                        addLog("[TACTICAL] Your Raygust Shield has been SHATTERED! Switched to Blade Mode (3s cooldown).", "kill");
+                    } else {
+                        this.trion -= amount * 0.15;
+                        window.audio.playShieldBlock();
+                        spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#00ff14', 14);
+                    }
+                    return;
                 }
-                if (this.trion <= 0) this.trion = 0;
+
+                // Shield holds! Reduce durability
+                this.shieldDurability -= amount;
+
+                if (this.shieldDurability <= 0) {
+                    // Shield shatters!
+                    this.shieldDurability = 0;
+                    this.shieldCooldown = 180; // 3 seconds at 60fps
+                    this.wasShieldActive = false;
+
+                    // Play shatter sound and extra sparks/effects
+                    window.audio.playShieldBlock();
+                    if (window.audio.playExplosion) {
+                        window.audio.playShieldBlock();
+                    }
+                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, '#ff3b30', 25);
+                    addLog("[TACTICAL] Your Shield has been SHATTERED! Entering 3s cooldown.", "kill");
+                } else {
+                    // Shield survived the hit
+                    window.audio.playShieldBlock();
+                    const sparkColor = isFullShield ? '#ffd700' : '#39ff14';
+                    spawnSparks(this.x + Math.cos(this.angle) * 22, this.y + Math.sin(this.angle) * 22, sparkColor, isFullShield ? 16 : 12);
+                }
                 return;
             }
 
@@ -4138,14 +4935,16 @@ function startSquadSimulation() {
 
             if (bothAreShield) {
                 const eitherPressed = isLeftMouseDown || isRightMouseDown;
-                mainShield = !this.isChameleonActive && eitherPressed;
-                subShield = !this.isChameleonActive && eitherPressed;
+                mainShield = !this.isChameleonActive && eitherPressed && this.shieldCooldown <= 0;
+                subShield = !this.isChameleonActive && eitherPressed && this.shieldCooldown <= 0;
             } else {
-                mainShield = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown);
-                subShield = !this.isChameleonActive && (hasShieldSub && isRightMouseDown);
+                mainShield = !this.isChameleonActive && (hasShieldMain && isLeftMouseDown) && this.shieldCooldown <= 0;
+                subShield = !this.isChameleonActive && (hasShieldSub && isRightMouseDown) && this.shieldCooldown <= 0;
             }
 
-            if (!mainShield && !subShield) return false;
+            const isRaygustShield = this.isRaygustShieldActive;
+
+            if (!mainShield && !subShield && !isRaygustShield) return false;
 
             const attacker = allAgents.find(a => a.id === attackerId);
             if (!attacker) return false;
@@ -4154,7 +4953,14 @@ function startSquadSimulation() {
             let angleDiff = attackAngle - this.angle;
             angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
-            const currentShieldAngle = (mainShield && subShield) ? 360 : 90;
+            let currentShieldAngle = 90;
+            if (isRaygustShield) {
+                currentShieldAngle = 120;
+            } else if (mainShield && subShield) {
+                currentShieldAngle = this.shieldAngleFull;
+            } else {
+                currentShieldAngle = this.shieldAngleStandard;
+            }
             const shieldRad = (currentShieldAngle * Math.PI) / 360;
             return Math.abs(angleDiff) <= shieldRad;
         }
@@ -4207,7 +5013,8 @@ function startSquadSimulation() {
     player.leakRate = 0;
     player.activeMainIndex = 0;
     player.activeSubIndex = 0;
-    player.isBagwormActive = (player.briefcase.main[0] === 'Bagworm' || player.briefcase.sub[0] === 'Bagworm');
+    // Bagworm is forced OFF during countdown so player can see all positions on radar
+    player.isBagwormActive = false;
 
     allAgents.push(player);
 
@@ -4268,6 +5075,7 @@ function startSquadSimulation() {
     // Launch pre-match countdown
     startCountdown(() => {
         matchActive = true;
+        activateBagwormOnMatchStart();
         addLog("[TACTICAL] Squad Rank Wars Match Commenced! 3 squads deployed to field.", 'system');
         requestAnimationFrame(gameLoop);
     });
@@ -4279,7 +5087,12 @@ function applySquadPreset(teamNum, presetType) {
         tamakoma: ['yuma', 'osamu', 'chika', 'hyuse'],
         ninomiya: ['ninomiya', 'kakizaki', 'yuba', 'suwa'],
         kageura: ['kageura', 'murakami', 'katori', 'nasu'],
-        arafune: ['arafune', 'azuma', 'ikoma', 'suwa']
+        arafune: ['arafune', 'azuma', 'ikoma', 'suwa'],
+        ikoma: ['ikoma', 'yuba', 'suwa', 'katori'],
+        nasu: ['nasu', 'chika', 'azuma', 'yuma'],
+        suwa: ['suwa', 'kakizaki', 'yuba', 'murakami'],
+        azuma: ['azuma', 'arafune', 'chika', 'hyuse'],
+        katori: ['katori', 'kageura', 'yuma', 'suwa']
     };
     const agents = mapping[presetType];
     if (!agents) return;
@@ -4343,12 +5156,18 @@ function setupSquadModeUI() {
     const randBtn = document.getElementById('squad-randomize-btn');
     if (randBtn) {
         randBtn.addEventListener('click', () => {
-            const presets = ['tamakoma', 'ninomiya', 'kageura', 'arafune'];
+            const presets = ['tamakoma', 'ninomiya', 'kageura', 'arafune', 'ikoma', 'nasu', 'suwa', 'azuma', 'katori'];
+            const p1 = presets[Math.floor(Math.random() * presets.length)];
             const p2 = presets[Math.floor(Math.random() * presets.length)];
             const p3 = presets[Math.floor(Math.random() * presets.length)];
 
+            const sel1 = document.getElementById('squad-preset-1');
             const sel2 = document.getElementById('squad-preset-2');
             const sel3 = document.getElementById('squad-preset-3');
+            if (sel1) {
+                sel1.value = p1;
+                applySquadPreset(1, p1);
+            }
             if (sel2) {
                 sel2.value = p2;
                 applySquadPreset(2, p2);
@@ -4357,7 +5176,7 @@ function setupSquadModeUI() {
                 sel3.value = p3;
                 applySquadPreset(3, p3);
             }
-            addLog(`[TACTICAL] Randomized Rival Squads! Loaded Preset: Team 2 (${p2.toUpperCase()}), Team 3 (${p3.toUpperCase()})`, 'system');
+            addLog(`[TACTICAL] Randomized All Squads! Loaded Preset: Team 1 (${p1.toUpperCase()}), Team 2 (${p2.toUpperCase()}), Team 3 (${p3.toUpperCase()})`, 'system');
         });
     }
 
